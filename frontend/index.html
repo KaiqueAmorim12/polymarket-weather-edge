@@ -724,7 +724,7 @@ const CIDADES = [
 // ==============================================================
 // ESTADO GLOBAL
 // ==============================================================
-let dadosCidades = {};     // {cidade: {leituras: [], odds: []}}
+let dadosCidades = {};     // {cidade: {leituras: [], odds: [], previsao: null}}
 let dadosApostas = [];
 let cidadeSelecionada = null;
 let chartInstance = null;
@@ -872,16 +872,21 @@ async function carregarApostas() {
   return await supabaseFetch(endpoint);
 }
 
-/** Carrega todas as leituras de hoje para todas as cidades em paralelo */
+/** Carrega todas as leituras e previsoes de hoje para todas as cidades em paralelo */
 async function carregarTodasLeituras() {
+  const dataHoje = dataHojeUTC();
   const promises = CIDADES.map(async (c) => {
-    const leituras = await carregarLeituras(c.nome);
-    return { cidade: c.nome, leituras };
+    const [leituras, prevArr] = await Promise.all([
+      carregarLeituras(c.nome),
+      supabaseFetch(`we_previsoes?cidade=eq.${encodeURIComponent(c.nome)}&data_alvo=eq.${dataHoje}&order=criado_em.desc&limit=1`)
+    ]);
+    return { cidade: c.nome, leituras, previsao: prevArr.length > 0 ? prevArr[0] : null };
   });
   const resultados = await Promise.all(promises);
   resultados.forEach(r => {
     if (!dadosCidades[r.cidade]) dadosCidades[r.cidade] = {};
     dadosCidades[r.cidade].leituras = r.leituras;
+    dadosCidades[r.cidade].previsao = r.previsao;
   });
 }
 
@@ -1047,6 +1052,13 @@ function renderizarGrid() {
     };
     const st = statusMap[a.status] || statusMap['sem-dados'];
 
+    // Previsao de maxima (se disponivel)
+    const dadosCidade = dadosCidades[c.nome];
+    const previsaoCard = dadosCidade && dadosCidade.previsao ? dadosCidade.previsao : null;
+    const prevStr = previsaoCard
+      ? `<div class="city-meta" style="color:#c0c0c0;">Prev: <strong>${parseFloat(previsaoCard.temp_max_prevista).toFixed(1)}${unidade}</strong></div>`
+      : '';
+
     html += `
       <div class="card city-card" onclick="abrirDetalhe('${c.nome}')">
         <div class="city-name">${c.nome} (${unidade})</div>
@@ -1063,6 +1075,7 @@ function renderizarGrid() {
           ${a.horaMax ? 'BRT: <strong>' + converterParaBRT(a.horaMax, c.fuso_offset) + '</strong>' : ''}
           ${a.horaMax ? ' | Leituras: ' + (a.totalLeituras || 0) : 'Leituras: ' + (a.totalLeituras || 0)}
         </div>
+        ${prevStr}
       </div>
     `;
   });
@@ -1084,19 +1097,31 @@ async function abrirDetalhe(nomeCidade) {
   document.getElementById('secao-detalhe').classList.add('active');
   document.getElementById('detalhe-titulo').innerHTML = `${nomeCidade} <span>(°${cidadeConfig.unidade})</span>`;
 
-  // Carregar odds e leituras dos 7 dias em paralelo
-  const [odds, leiturasHistoricas] = await Promise.all([
+  // Carregar odds, leituras historicas e previsao em paralelo
+  const dataHoje = dataHojeUTC();
+  const [odds, leiturasHistoricas, previsoes7d, previsaoHoje] = await Promise.all([
     carregarOdds(nomeCidade),
-    carregarLeiturasUltimosDias(nomeCidade, 7)
+    carregarLeiturasUltimosDias(nomeCidade, 7),
+    supabaseFetch(`we_previsoes?cidade=eq.${encodeURIComponent(nomeCidade)}&order=data_alvo.desc&limit=7`),
+    supabaseFetch(`we_previsoes?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=eq.${dataHoje}&order=criado_em.desc&limit=1`)
   ]);
 
   // Calcular pico medio dos ultimos 7 dias
   const picoMedio = calcularPicoMedio(leiturasHistoricas);
 
+  // Previsao de hoje (se existir)
+  const previsao = previsaoHoje.length > 0 ? previsaoHoje[0] : null;
+
+  // Calcular acuracia das previsoes dos ultimos 7 dias
+  const acuracia = calcularAcuraciaPrevisoes(previsoes7d, leiturasHistoricas);
+
   // Renderizar grafico com leituras de hoje
   const dados = dadosCidades[nomeCidade];
   const leituras = dados ? dados.leituras : [];
-  renderizarGrafico(leituras, cidadeConfig, picoMedio);
+  renderizarGrafico(leituras, cidadeConfig, picoMedio, previsao);
+
+  // Renderizar info de previsao abaixo do grafico
+  renderizarInfoPrevisao(previsao, leituras, cidadeConfig, acuracia);
 
   // Renderizar odds
   renderizarOdds(odds);
@@ -1118,7 +1143,85 @@ function voltarParaGrid() {
 // GRAFICO DE TEMPERATURA (Chart.js)
 // ==============================================================
 
-function renderizarGrafico(leituras, cidadeConfig, picoMedio) {
+// ==============================================================
+// PREVISAO DE TEMPERATURA — HELPERS
+// ==============================================================
+
+/**
+ * Calcula acuracia das previsoes comparando com maxima real de cada dia.
+ * Considera acerto quando diferenca <= 1 grau.
+ */
+function calcularAcuraciaPrevisoes(previsoes, leiturasHistoricas) {
+  if (!previsoes || previsoes.length === 0) return null;
+
+  // Agrupar leituras por data e calcular maxima real de cada dia
+  const maximaPorDia = {};
+  leiturasHistoricas.forEach(l => {
+    const dia = l.data_alvo;
+    if (!dia) return;
+    const t = parseFloat(l.temperatura);
+    if (isNaN(t)) return;
+    if (maximaPorDia[dia] === undefined || t > maximaPorDia[dia]) {
+      maximaPorDia[dia] = t;
+    }
+  });
+
+  let acertos = 0;
+  let total = 0;
+  previsoes.forEach(p => {
+    const maxReal = maximaPorDia[p.data_alvo];
+    if (maxReal === undefined) return; // dia sem leituras — pular
+    total++;
+    if (Math.abs(parseFloat(p.temp_max_prevista) - maxReal) <= 1) {
+      acertos++;
+    }
+  });
+
+  if (total === 0) return null;
+  return { acertos, total, pct: Math.round(acertos / total * 100) };
+}
+
+/** Renderiza bloco de info de previsao abaixo do grafico */
+function renderizarInfoPrevisao(previsao, leituras, cidadeConfig, acuracia) {
+  const container = document.getElementById('chart-info');
+  const unidade = cidadeConfig.unidade;
+
+  // Calcular temperatura maxima real ate agora
+  let maxReal = null;
+  if (leituras && leituras.length > 0) {
+    maxReal = Math.max(...leituras.map(l => parseFloat(l.temperatura)));
+  }
+
+  // Bloco base (atual, pico, min, pico medio) — ja renderizado pelo grafico, adicionar previsao
+  const infoAtual = container.innerHTML;
+
+  let blocoPrevisao = '';
+  if (previsao) {
+    const prev = parseFloat(previsao.temp_max_prevista);
+    const hora = previsao.hora_captura ? previsao.hora_captura.slice(11, 16) + ' UTC' : '';
+    const diff = maxReal !== null ? (maxReal - prev).toFixed(1) : null;
+    const diffStr = diff !== null
+      ? `<span class="${parseFloat(diff) >= 0 ? 'green' : 'red'}">${parseFloat(diff) >= 0 ? '+' : ''}${diff}°${unidade}</span>`
+      : '';
+
+    blocoPrevisao = `
+    <div style="margin-top:10px; padding:10px 0; border-top:1px solid var(--border); width:100%; font-size:12px; display:flex; gap:20px; flex-wrap:wrap;">
+      <span><span class="label sec">Previsao ${hora}: </span><span class="val" style="color:#c0c0c0;">${prev.toFixed(1)}°${unidade}</span></span>
+      ${maxReal !== null ? `<span><span class="label sec">Max real ate agora: </span><span class="val gold">${maxReal.toFixed(1)}°${unidade}</span></span>` : ''}
+      ${diff !== null ? `<span><span class="label sec">Diferenca: </span>${diffStr}</span>` : ''}
+      ${acuracia ? `<span><span class="label sec">Acuracia 7d (±1°): </span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>` : ''}
+    </div>`;
+  } else if (acuracia) {
+    blocoPrevisao = `
+    <div style="margin-top:10px; padding:10px 0; border-top:1px solid var(--border); width:100%; font-size:12px;">
+      <span><span class="label sec">Acuracia 7d (±1°): </span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>
+    </div>`;
+  }
+
+  container.innerHTML = infoAtual + blocoPrevisao;
+}
+
+function renderizarGrafico(leituras, cidadeConfig, picoMedio, previsao) {
   const canvas = document.getElementById('temp-chart');
   const ctx = canvas.getContext('2d');
 
@@ -1168,6 +1271,35 @@ function renderizarGrafico(leituras, cidadeConfig, picoMedio) {
   const gradient = ctx.createLinearGradient(0, 0, 0, 280);
   gradient.addColorStop(0, 'rgba(212, 160, 23, 0.3)');
   gradient.addColorStop(1, 'rgba(212, 160, 23, 0.0)');
+
+  // Linha horizontal tracejada para previsao de maxima
+  const tempPrevista = previsao ? parseFloat(previsao.temp_max_prevista) : null;
+
+  // Plugin customizado: desenha linha horizontal tracejada da previsao
+  const pluginLinhaPrevisao = {
+    id: 'linhaPrevisao',
+    afterDraw(chart) {
+      if (tempPrevista === null) return;
+      const { ctx: c, chartArea, scales } = chart;
+      const y = scales.y.getPixelForValue(tempPrevista);
+      if (y < chartArea.top || y > chartArea.bottom) return;
+      c.save();
+      c.setLineDash([6, 4]);
+      c.strokeStyle = 'rgba(192,192,192,0.7)';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(chartArea.left, y);
+      c.lineTo(chartArea.right, y);
+      c.stroke();
+      // Label a direita
+      c.setLineDash([]);
+      c.fillStyle = 'rgba(192,192,192,0.9)';
+      c.font = '10px Inter, sans-serif';
+      c.textAlign = 'right';
+      c.fillText(`Previsao: ${tempPrevista.toFixed(1)}°`, chartArea.right - 4, y - 4);
+      c.restore();
+    }
+  };
 
   // Plugin de linha vertical tracejada para pico medio
   // Encontrar o indice do label mais proximo ao horario de pico medio
@@ -1272,7 +1404,7 @@ function renderizarGrafico(leituras, cidadeConfig, picoMedio) {
       },
       interaction: { intersect: false, mode: 'index' }
     },
-    plugins: [pluginLinhaPico]
+    plugins: [pluginLinhaPico, pluginLinhaPrevisao]
   });
 
   // Info abaixo do grafico

@@ -136,6 +136,32 @@ class ColetorWU:
             "unidade": pico.unidade,
         }
 
+    async def coletar_previsao(
+        self, latitude: float, longitude: float, unidade: str
+    ) -> Optional[float]:
+        """Busca previsao de temperatura maxima de hoje no WU forecast."""
+        unidade_param = "m" if unidade == "C" else "e"
+        url = "https://api.weather.com/v3/wx/forecast/daily/5day"
+        params = {
+            "geocode": f"{latitude},{longitude}",
+            "format": "json",
+            "units": unidade_param,
+            "language": "en-US",
+            "apiKey": WU_API_KEY,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                r = await client.get(url, params=params)
+                r.raise_for_status()
+                dados = r.json()
+                maximas = dados.get("calendarDayTemperatureMax", [])
+                if maximas:
+                    return float(maximas[0])  # previsao de hoje
+                return None
+        except Exception as e:
+            logger.warning(f"Erro ao buscar previsao WU: {e}")
+            return None
+
     def _calcular_status(self, leituras: list[LeituraHoraria]) -> str:
         """Calcula status atual: Subindo, Perto do pico, Pico atingido, Descendo."""
         if len(leituras) < 2:

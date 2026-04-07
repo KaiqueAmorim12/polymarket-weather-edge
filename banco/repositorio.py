@@ -93,6 +93,24 @@ class Repositorio:
     def buscar_historico_apostas(self, limite: int = 100) -> list[dict]:
         return self._get("we_apostas", f"order=data_alvo.desc,horario_registro.desc&limit={limite}")
 
+    # --- Previsoes ---
+
+    def salvar_previsao(self, cidade: str, data_alvo: str, temp_max_prevista: float,
+                        unidade: str, hora_captura: str) -> None:
+        self._post("we_previsoes", {
+            "cidade": cidade, "data_alvo": data_alvo, "temp_max_prevista": temp_max_prevista,
+            "unidade": unidade, "hora_captura": hora_captura,
+        })
+
+    def buscar_previsao(self, cidade: str, data_alvo: str) -> Optional[dict]:
+        resultado = self._get("we_previsoes", f"cidade=eq.{cidade}&data_alvo=eq.{data_alvo}&order=criado_em.desc&limit=1")
+        return resultado[0] if resultado else None
+
+    def buscar_previsoes_periodo(self, cidade: str, dias: int = 7) -> list[dict]:
+        from datetime import date, timedelta
+        data_inicio = (date.today() - timedelta(days=dias)).isoformat()
+        return self._get("we_previsoes", f"cidade=eq.{cidade}&data_alvo=gte.{data_inicio}&order=data_alvo.desc")
+
     def calcular_metricas(self) -> dict:
         apostas = self._get("we_apostas", "select=resultado,pnl,valor")
         total = len(apostas)
