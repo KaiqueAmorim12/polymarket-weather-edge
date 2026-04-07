@@ -380,6 +380,79 @@
     .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
 
     /* ======================================================
+       CHART HEADER (titulo com data)
+    ====================================================== */
+    .chart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+    }
+    .chart-title {
+      font-size: 13px; font-weight: 700; color: var(--text-main);
+    }
+    .chart-date-badge {
+      font-size: 11px; color: var(--text-sec);
+      background: rgba(212,160,23,0.1); border: 1px solid rgba(212,160,23,0.2);
+      border-radius: 4px; padding: 2px 8px;
+    }
+
+    /* ======================================================
+       FORMULARIO DE APOSTAS
+    ====================================================== */
+    .aposta-form {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 20px;
+    }
+    @media (max-width: 800px) { .aposta-form { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .aposta-form { grid-template-columns: 1fr; } }
+
+    .aposta-form .form-group {
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .aposta-form label {
+      font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-sec); font-weight: 600;
+    }
+    .aposta-form input, .aposta-form select {
+      width: 100%;
+    }
+    .aposta-form input[type="number"], .aposta-form input[type="date"] {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(136,146,164,0.15);
+      border-radius: var(--radius-btn);
+      color: var(--text-main);
+      padding: 7px 12px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+    .aposta-form input[type="number"]:focus,
+    .aposta-form input[type="date"]:focus,
+    .aposta-form input[type="text"]:focus {
+      border-color: rgba(212,160,23,0.5);
+    }
+    .form-footer {
+      padding: 0 20px 20px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .form-msg {
+      font-size: 13px; padding: 6px 12px; border-radius: 4px;
+    }
+    .form-msg.sucesso { background: rgba(34,197,94,0.15); color: var(--green); }
+    .form-msg.erro    { background: rgba(239,68,68,0.15);  color: var(--red);   }
+
+    /* Botoes ganhou/perdeu na tabela */
+    .btn-mini {
+      padding: 3px 8px; font-size: 11px; font-weight: 700;
+      border-radius: 4px; border: none; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-mini:hover { opacity: 0.8; }
+    .btn-ganhou { background: rgba(34,197,94,0.2); color: var(--green); }
+    .btn-perdeu { background: rgba(239,68,68,0.2); color: var(--red); }
+
+    /* ======================================================
        TOOLTIP
     ====================================================== */
     [data-tip] { position: relative; cursor: help; }
@@ -464,6 +537,10 @@
       <!-- Grafico -->
       <div class="card detail-card">
         <h3>Curva de Temperatura</h3>
+        <div class="chart-header">
+          <span class="chart-title" id="chart-titulo-data">—</span>
+          <span class="chart-date-badge" id="chart-data-badge">Dados de: —</span>
+        </div>
         <div class="chart-wrapper">
           <canvas id="temp-chart"></canvas>
         </div>
@@ -486,6 +563,49 @@
     <div class="section-title">
       <div class="section-icon">&#128176;</div>
       Historico de Apostas
+    </div>
+
+    <!-- Formulario de Nova Aposta -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div style="padding: 16px 20px 0; display: flex; align-items: center; gap: 8px;">
+        <div class="section-icon">&#43;</div>
+        <span style="font-size: 14px; font-weight: 700;">Registrar Nova Aposta</span>
+      </div>
+      <div class="aposta-form">
+        <div class="form-group">
+          <label>Cidade</label>
+          <select id="form-cidade">
+            <option value="">Selecione a cidade...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="form-tipo">
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Faixa (ex: "23°C" ou "78-79°F")</label>
+          <input type="text" id="form-faixa" placeholder='ex: 23°C ou 78-79°F' />
+        </div>
+        <div class="form-group">
+          <label>Odd (0.01 a 0.99)</label>
+          <input type="number" id="form-odd" min="0.01" max="0.99" step="0.01" placeholder="ex: 0.65" />
+        </div>
+        <div class="form-group">
+          <label>Valor ($)</label>
+          <input type="number" id="form-valor" min="0.01" step="0.01" placeholder="ex: 10.00" />
+        </div>
+        <div class="form-group">
+          <label>Data do Contrato</label>
+          <input type="date" id="form-data" />
+        </div>
+      </div>
+      <div class="form-footer">
+        <button class="btn btn-gold" onclick="registrarAposta()">&#128176; Registrar Aposta</button>
+        <span id="form-msg" class="form-msg" style="display:none;"></span>
+      </div>
     </div>
 
     <!-- Metricas -->
@@ -522,10 +642,11 @@
               <th>Valor</th>
               <th>Resultado</th>
               <th>P&amp;L</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="apostas-body">
-            <tr><td colspan="8" class="loading"><div class="spinner"></div> Carregando apostas...</td></tr>
+            <tr><td colspan="9" class="loading"><div class="spinner"></div> Carregando apostas...</td></tr>
           </tbody>
         </table>
       </div>
@@ -652,6 +773,76 @@ async function carregarLeituras(cidade) {
   const data = dataHojeUTC();
   const endpoint = `we_leituras?cidade=eq.${encodeURIComponent(cidade)}&data_alvo=eq.${data}&order=timestamp_wu`;
   return await supabaseFetch(endpoint);
+}
+
+/** Carrega leituras dos ultimos N dias de uma cidade */
+async function carregarLeiturasUltimosDias(cidade, dias) {
+  // Calcular data inicio (dias atras)
+  const dataFim = new Date();
+  const dataInicio = new Date();
+  dataInicio.setDate(dataInicio.getDate() - dias);
+
+  const inicioStr = dataInicio.toISOString().split('T')[0];
+  const fimStr = dataFim.toISOString().split('T')[0];
+
+  const endpoint = `we_leituras?cidade=eq.${encodeURIComponent(cidade)}&data_alvo=gte.${inicioStr}&data_alvo=lte.${fimStr}&order=data_alvo,timestamp_wu`;
+  return await supabaseFetch(endpoint);
+}
+
+/**
+ * Calcula o horario medio de pico (temperatura maxima) dos ultimos dias.
+ * Retorna string "HH:MM" ou null se nao tiver dados suficientes.
+ */
+function calcularPicoMedio(leituras) {
+  if (!leituras || leituras.length === 0) return null;
+
+  // Agrupar leituras por data_alvo
+  const porDia = {};
+  leituras.forEach(l => {
+    const dia = l.data_alvo;
+    if (!dia) return;
+    if (!porDia[dia]) porDia[dia] = [];
+    porDia[dia].push(l);
+  });
+
+  const dias = Object.keys(porDia);
+  if (dias.length === 0) return null;
+
+  // Para cada dia, encontrar o horario do pico
+  const minutosMaxPorDia = [];
+  dias.forEach(dia => {
+    const leiturasNoDia = porDia[dia];
+    let maxTemp = -999;
+    let horaMaxStr = null;
+
+    leiturasNoDia.forEach(l => {
+      const t = parseFloat(l.temperatura);
+      if (t > maxTemp) {
+        maxTemp = t;
+        horaMaxStr = l.hora_local || l.hora_utc || null;
+      }
+    });
+
+    if (horaMaxStr) {
+      // Converter hora para minutos totais do dia (ex: "14:30" -> 870)
+      const partes = horaMaxStr.substring(0, 5).split(':');
+      if (partes.length === 2) {
+        const minutos = parseInt(partes[0]) * 60 + parseInt(partes[1]);
+        minutosMaxPorDia.push(minutos);
+      }
+    }
+  });
+
+  if (minutosMaxPorDia.length === 0) return null;
+
+  // Media dos minutos
+  const mediaMinutos = Math.round(
+    minutosMaxPorDia.reduce((s, m) => s + m, 0) / minutosMaxPorDia.length
+  );
+
+  const horas = Math.floor(mediaMinutos / 60);
+  const minutos = mediaMinutos % 60;
+  return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
 }
 
 /** Carrega odds de uma cidade para data de hoje */
@@ -876,16 +1067,21 @@ async function abrirDetalhe(nomeCidade) {
   document.getElementById('secao-detalhe').classList.add('active');
   document.getElementById('detalhe-titulo').innerHTML = `${nomeCidade} <span>(°${cidadeConfig.unidade})</span>`;
 
-  // Carregar odds em paralelo
-  const oddsPromise = carregarOdds(nomeCidade);
+  // Carregar odds e leituras dos 7 dias em paralelo
+  const [odds, leiturasHistoricas] = await Promise.all([
+    carregarOdds(nomeCidade),
+    carregarLeiturasUltimosDias(nomeCidade, 7)
+  ]);
 
-  // Renderizar grafico com leituras existentes
+  // Calcular pico medio dos ultimos 7 dias
+  const picoMedio = calcularPicoMedio(leiturasHistoricas);
+
+  // Renderizar grafico com leituras de hoje
   const dados = dadosCidades[nomeCidade];
   const leituras = dados ? dados.leituras : [];
-  renderizarGrafico(leituras, cidadeConfig);
+  renderizarGrafico(leituras, cidadeConfig, picoMedio);
 
-  // Renderizar odds quando chegarem
-  const odds = await oddsPromise;
+  // Renderizar odds
   renderizarOdds(odds);
 }
 
@@ -905,7 +1101,7 @@ function voltarParaGrid() {
 // GRAFICO DE TEMPERATURA (Chart.js)
 // ==============================================================
 
-function renderizarGrafico(leituras, cidadeConfig) {
+function renderizarGrafico(leituras, cidadeConfig, picoMedio) {
   const canvas = document.getElementById('temp-chart');
   const ctx = canvas.getContext('2d');
 
@@ -914,6 +1110,14 @@ function renderizarGrafico(leituras, cidadeConfig) {
     chartInstance.destroy();
     chartInstance = null;
   }
+
+  // Atualizar titulo e badge de data
+  const dataHoje = dataHojeUTC();
+  const dataFormatada = new Date(dataHoje + 'T12:00:00Z').toLocaleDateString('pt-BR', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'
+  });
+  document.getElementById('chart-titulo-data').textContent = `Curva de Temperatura — ${dataFormatada}`;
+  document.getElementById('chart-data-badge').textContent = `Dados de: ${dataHoje}`;
 
   if (!leituras || leituras.length === 0) {
     document.getElementById('chart-info').innerHTML =
@@ -947,6 +1151,48 @@ function renderizarGrafico(leituras, cidadeConfig) {
   const gradient = ctx.createLinearGradient(0, 0, 0, 280);
   gradient.addColorStop(0, 'rgba(212, 160, 23, 0.3)');
   gradient.addColorStop(1, 'rgba(212, 160, 23, 0.0)');
+
+  // Plugin de linha vertical tracejada para pico medio
+  // Encontrar o indice do label mais proximo ao horario de pico medio
+  let picoMedioIdx = null;
+  if (picoMedio && labels.length > 0) {
+    const [hPico, mPico] = picoMedio.split(':').map(Number);
+    const minutosPico = hPico * 60 + mPico;
+    let menorDiff = Infinity;
+    labels.forEach((lbl, i) => {
+      const partes = lbl.split(':').map(Number);
+      if (partes.length === 2) {
+        const minLbl = partes[0] * 60 + partes[1];
+        const diff = Math.abs(minLbl - minutosPico);
+        if (diff < menorDiff) { menorDiff = diff; picoMedioIdx = i; }
+      }
+    });
+  }
+
+  // Plugin customizado: desenha linha tracejada vertical no pico medio
+  const pluginLinhaPico = {
+    id: 'linhaPicoMedio',
+    afterDraw(chart) {
+      if (picoMedioIdx === null) return;
+      const { ctx: c, chartArea, scales } = chart;
+      const x = scales.x.getPixelForValue(picoMedioIdx);
+      c.save();
+      c.setLineDash([5, 4]);
+      c.strokeStyle = 'rgba(192,192,192,0.6)';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(x, chartArea.top);
+      c.lineTo(x, chartArea.bottom);
+      c.stroke();
+      // Label acima da linha
+      c.setLineDash([]);
+      c.fillStyle = 'rgba(192,192,192,0.9)';
+      c.font = '10px Inter, sans-serif';
+      c.textAlign = 'center';
+      c.fillText(`Pico ~${picoMedio}`, x, chartArea.top - 4);
+      c.restore();
+    }
+  };
 
   chartInstance = new Chart(ctx, {
     type: 'line',
@@ -1001,7 +1247,8 @@ function renderizarGrafico(leituras, cidadeConfig) {
         }
       },
       interaction: { intersect: false, mode: 'index' }
-    }
+    },
+    plugins: [pluginLinhaPico]
   });
 
   // Info abaixo do grafico
@@ -1013,14 +1260,19 @@ function renderizarGrafico(leituras, cidadeConfig) {
       <span class="val gold">${tempAtual.toFixed(1)}°${cidadeConfig.unidade}</span>
     </div>
     <div class="chart-info-item">
-      <span class="label">Pico: </span>
+      <span class="label">Pico hoje: </span>
       <span class="val green">${picoVal.toFixed(1)}°${cidadeConfig.unidade}</span>
-      <span class="sec"> as ${labels[picoIdx]}</span>
+      <span class="sec"> às ${labels[picoIdx]}</span>
     </div>
     <div class="chart-info-item">
       <span class="label">Min: </span>
       <span class="val">${tempMin.toFixed(1)}°${cidadeConfig.unidade}</span>
     </div>
+    ${picoMedio ? `
+    <div class="chart-info-item">
+      <span class="label">Pico médio (7d): </span>
+      <span class="val purple">~${picoMedio} local</span>
+    </div>` : ''}
     <div class="chart-info-item">
       <span class="label">Leituras: </span>
       <span class="val">${leituras.length}</span>
@@ -1090,7 +1342,7 @@ function renderizarApostas() {
   const tbody = document.getElementById('apostas-body');
 
   if (!dadosApostas || dadosApostas.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="icon">&#128203;</div>Nenhuma aposta registrada.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state"><div class="icon">&#128203;</div>Nenhuma aposta registrada.</td></tr>';
     atualizarMetricas([]);
     return;
   }
@@ -1119,6 +1371,23 @@ function renderizarApostas() {
     const oddStr = a.odd ? `${(parseFloat(a.odd) * 100).toFixed(0)}&#162;` : '—';
     const valorStr = a.valor ? `$${parseFloat(a.valor).toFixed(2)}` : '—';
 
+    // Botoes de resultado — so aparecem para apostas pendentes
+    const isPendente = !a.resultado || a.resultado === 'pendente';
+    let acoesHtml = '—';
+    if (isPendente && a.id) {
+      // Calcular lucro potencial: odd * valor - valor = (odd - 1) * valor
+      // Como odd aqui e 0-1 (ex: 0.65 = 65c), lucro = valor / odd - valor
+      const odd = parseFloat(a.odd) || 0;
+      const valor = parseFloat(a.valor) || 0;
+      // Lucro se ganhar: retorno total - investido = (valor / odd) - valor
+      const lucro = odd > 0 ? ((valor / odd) - valor).toFixed(2) : 0;
+      const prejuizo = (-valor).toFixed(2);
+      acoesHtml = `
+        <button class="btn-mini btn-ganhou" onclick="registrarResultado(${a.id}, 'ganhou', ${lucro})">&#10003; Ganhou</button>
+        <button class="btn-mini btn-perdeu" onclick="registrarResultado(${a.id}, 'perdeu', ${prejuizo})">&#10007; Perdeu</button>
+      `;
+    }
+
     html += `
       <tr>
         <td>${a.data_alvo || '—'}</td>
@@ -1129,6 +1398,7 @@ function renderizarApostas() {
         <td>${valorStr}</td>
         <td>${resultadoHtml}</td>
         <td class="${pnlClass}">${pnlStr}</td>
+        <td>${acoesHtml}</td>
       </tr>
     `;
   });
@@ -1168,6 +1438,128 @@ function atualizarMetricas(apostas) {
 }
 
 // ==============================================================
+// FORMULARIO DE APOSTAS
+// ==============================================================
+
+/** Popula o select de cidades no formulario */
+function inicializarFormulario() {
+  const sel = document.getElementById('form-cidade');
+  CIDADES.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.nome;
+    opt.textContent = `${c.nome} (°${c.unidade})`;
+    sel.appendChild(opt);
+  });
+
+  // Default: amanha como data do contrato
+  const amanha = new Date();
+  amanha.setDate(amanha.getDate() + 1);
+  document.getElementById('form-data').value = amanha.toISOString().split('T')[0];
+}
+
+/** Mostra mensagem de sucesso ou erro no formulario */
+function mostrarMsgForm(texto, tipo) {
+  const el = document.getElementById('form-msg');
+  el.textContent = texto;
+  el.className = `form-msg ${tipo}`;
+  el.style.display = 'inline-block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+/** Registra uma nova aposta no Supabase */
+async function registrarAposta() {
+  const cidade = document.getElementById('form-cidade').value.trim();
+  const tipo   = document.getElementById('form-tipo').value;
+  const faixa  = document.getElementById('form-faixa').value.trim();
+  const odd    = parseFloat(document.getElementById('form-odd').value);
+  const valor  = parseFloat(document.getElementById('form-valor').value);
+  const data   = document.getElementById('form-data').value;
+
+  // Validacoes basicas
+  if (!cidade) { mostrarMsgForm('Selecione uma cidade.', 'erro'); return; }
+  if (!faixa)  { mostrarMsgForm('Informe a faixa de temperatura.', 'erro'); return; }
+  if (isNaN(odd) || odd < 0.01 || odd > 0.99) { mostrarMsgForm('Odd deve ser entre 0.01 e 0.99.', 'erro'); return; }
+  if (isNaN(valor) || valor <= 0) { mostrarMsgForm('Informe um valor valido.', 'erro'); return; }
+  if (!data) { mostrarMsgForm('Informe a data do contrato.', 'erro'); return; }
+
+  const payload = {
+    cidade: cidade,
+    data_alvo: data,
+    faixa: faixa,
+    tipo: tipo,
+    odd: odd,
+    valor: valor,
+    horario_registro: new Date().toISOString().slice(0, 16),
+    resultado: 'pendente',
+  };
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/we_apostas`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!resp.ok) {
+      const erro = await resp.text();
+      console.error('Erro ao registrar aposta:', erro);
+      mostrarMsgForm(`Erro: ${resp.status} — ${erro}`, 'erro');
+      return;
+    }
+
+    mostrarMsgForm('Aposta registrada com sucesso!', 'sucesso');
+
+    // Limpar campos (exceto cidade e tipo)
+    document.getElementById('form-faixa').value = '';
+    document.getElementById('form-odd').value = '';
+    document.getElementById('form-valor').value = '';
+
+    // Recarregar tabela de apostas
+    dadosApostas = await carregarApostas();
+    renderizarApostas();
+
+  } catch (err) {
+    console.error('Erro de rede ao registrar aposta:', err);
+    mostrarMsgForm('Erro de conexao. Tente novamente.', 'erro');
+  }
+}
+
+/** Atualiza resultado de uma aposta (ganhou/perdeu) via PATCH */
+async function registrarResultado(id, resultado, pnl) {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/we_apostas?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ resultado: resultado, pnl: parseFloat(pnl) })
+    });
+
+    if (!resp.ok) {
+      const erro = await resp.text();
+      console.error('Erro ao atualizar resultado:', erro);
+      alert(`Erro ao atualizar: ${resp.status}`);
+      return;
+    }
+
+    // Recarregar apostas e re-renderizar
+    dadosApostas = await carregarApostas();
+    renderizarApostas();
+
+  } catch (err) {
+    console.error('Erro de rede ao atualizar resultado:', err);
+    alert('Erro de conexao. Tente novamente.');
+  }
+}
+
+// ==============================================================
 // FILTROS — EVENT LISTENERS
 // ==============================================================
 
@@ -1177,6 +1569,9 @@ document.getElementById('filtro-ordem').addEventListener('change', renderizarGri
 // ==============================================================
 // INICIALIZACAO + AUTO-REFRESH
 // ==============================================================
+
+// Inicializar formulario de apostas (popula select de cidades)
+inicializarFormulario();
 
 // Carregar tudo ao abrir a pagina
 carregarTudo();
