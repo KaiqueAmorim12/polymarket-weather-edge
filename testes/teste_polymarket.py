@@ -39,6 +39,23 @@ class TestMapeador:
         assert faixa is None
 
 
+class TestConstruirSlug:
+    def test_slug_london(self) -> None:
+        from polymarket.conector import PolymarketConector
+        c = PolymarketConector()
+        assert c._construir_slug("London", "2026-04-08") == "highest-temperature-in-london-on-april-8-2026"
+
+    def test_slug_nyc(self) -> None:
+        from polymarket.conector import PolymarketConector
+        c = PolymarketConector()
+        assert c._construir_slug("NYC", "2026-04-08") == "highest-temperature-in-nyc-on-april-8-2026"
+
+    def test_slug_hong_kong(self) -> None:
+        from polymarket.conector import PolymarketConector
+        c = PolymarketConector()
+        assert c._construir_slug("Hong Kong", "2026-04-08") == "highest-temperature-in-hong-kong-on-april-8-2026"
+
+
 class TestConector:
     def test_parsear_evento_weather(self) -> None:
         from polymarket.conector import PolymarketConector

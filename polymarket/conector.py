@@ -16,44 +16,40 @@ GAMMA_API_BASE = "https://gamma-api.polymarket.com"
 class PolymarketConector:
     """Busca contratos de temperatura e odds na Polymarket."""
 
-    async def buscar_eventos_clima(self, cidade: str, data_alvo: str) -> list[dict[str, Any]]:
-        """Busca eventos de temperatura pra uma cidade/data na Gamma API."""
+    def _construir_slug(self, cidade: str, data_alvo: str) -> str:
+        """Constroi o slug do evento de temperatura na Polymarket.
+
+        Padrao: highest-temperature-in-{cidade}-on-{month}-{day}-{year}
+        Ex: highest-temperature-in-london-on-april-8-2026
+        """
+        dt = datetime.strptime(data_alvo, "%Y-%m-%d")
+        mes_ingles = dt.strftime("%B").lower()  # april, may, etc.
+        cidade_slug = cidade.lower().replace(" ", "-")
+        return f"highest-temperature-in-{cidade_slug}-on-{mes_ingles}-{dt.day}-{dt.year}"
+
+    async def buscar_evento_por_slug(self, cidade: str, data_alvo: str) -> Optional[dict[str, Any]]:
+        """Busca evento de temperatura via slug direto na Gamma API."""
+        slug = self._construir_slug(cidade, data_alvo)
         try:
-            termos = f"highest temperature {cidade}"
-
             async with httpx.AsyncClient(timeout=30.0) as client:
-                resposta = await client.get(
-                    f"{GAMMA_API_BASE}/events",
-                    params={
-                        "closed": False,
-                        "limit": 20,
-                        "title": termos,
-                    },
-                )
-                resposta.raise_for_status()
-                eventos = resposta.json()
-
-                eventos_filtrados = []
-                for evento in eventos:
-                    titulo = evento.get("title", "").lower()
-                    if self._data_no_titulo(data_alvo, titulo):
-                        eventos_filtrados.append(evento)
-
-                return eventos_filtrados
+                resposta = await client.get(f"{GAMMA_API_BASE}/events/slug/{slug}")
+                if resposta.status_code == 200:
+                    evento = resposta.json()
+                    logger.info(f"Polymarket: encontrado '{evento.get('title', '')}' ({len(evento.get('markets', []))} faixas)")
+                    return evento
+                else:
+                    logger.warning(f"Polymarket: evento nao encontrado para slug '{slug}' (status {resposta.status_code})")
+                    return None
         except Exception as e:
-            logger.warning(f"Erro ao buscar eventos Polymarket para {cidade} ({data_alvo}): {e}")
-            return []
+            logger.warning(f"Erro ao buscar evento Polymarket ({slug}): {e}")
+            return None
 
     async def buscar_odds(self, cidade: str, data_alvo: str) -> list[dict[str, Any]]:
         """Busca odds de todas as faixas de temperatura pra uma cidade/data."""
-        eventos = await self.buscar_eventos_clima(cidade, data_alvo)
-
-        todas_odds: list[dict[str, Any]] = []
-        for evento in eventos:
-            odds = self._parsear_evento(evento)
-            todas_odds.extend(odds)
-
-        return todas_odds
+        evento = await self.buscar_evento_por_slug(cidade, data_alvo)
+        if not evento:
+            return []
+        return self._parsear_evento(evento)
 
     def _parsear_evento(self, evento: dict[str, Any]) -> list[dict[str, Any]]:
         """Parseia evento da Gamma API e extrai odds por faixa."""
@@ -95,13 +91,31 @@ class PolymarketConector:
         return odds
 
     def _extrair_faixa_da_pergunta(self, pergunta: str) -> Optional[Any]:
-        """Extrai faixa de temperatura de uma pergunta de contrato."""
-        import re
-        match = re.search(r"(\d+°[CF](?:\s+(?:or\s+(?:higher|lower|above|below)|ou\s+(?:mais|menos)))?)", pergunta)
-        if match:
-            return parsear_faixa_temperatura(match.group(1))
+        """Extrai faixa de temperatura de uma pergunta de contrato.
 
-        match = re.search(r"(\d+)\s*°\s*([CF])", pergunta)
+        Lida com diferentes encodings do simbolo de grau (°, \u00b0, etc.)
+        """
+        import re
+        # Normalizar: substituir variantes do simbolo de grau
+        pergunta_norm = pergunta.replace("\u00b0", "°").replace("&#176;", "°")
+
+        # Padrao completo: "20°C or higher", "16°C or below", "20°C"
+        match = re.search(
+            r"(\d+)\s*°\s*([CF])\s*(or\s+(?:higher|lower|above|below)|ou\s+(?:mais|menos))?",
+            pergunta_norm,
+            re.IGNORECASE,
+        )
+        if match:
+            numero = match.group(1)
+            unidade = match.group(2)
+            modificador = (match.group(3) or "").strip()
+            texto = f"{numero}°{unidade}"
+            if modificador:
+                texto += f" {modificador}"
+            return parsear_faixa_temperatura(texto)
+
+        # Fallback: qualquer numero seguido de C ou F na pergunta
+        match = re.search(r"(\d+)\s*[°º]\s*([CF])", pergunta_norm, re.IGNORECASE)
         if match:
             return parsear_faixa_temperatura(f"{match.group(1)}°{match.group(2)}")
 
