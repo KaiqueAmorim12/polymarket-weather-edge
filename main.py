@@ -219,6 +219,14 @@ async def executar_ciclo_completo() -> None:
             except Exception as e:
                 logger.error(f"Erro em {cidade['nome']} ({data_alvo} {horizonte}): {e}")
 
+    # 5. Verificar resultados de ontem
+    from coletores.resolucao import ColetorResolucao
+    try:
+        coletor_resolucao = ColetorResolucao()
+        await coletor_resolucao.verificar_resultados(repo)
+    except Exception as e:
+        logger.error(f"Erro ao verificar resultados: {e}")
+
     logger.info("=== Ciclo completo ===")
 
 

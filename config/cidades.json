@@ -7,7 +7,8 @@
             "longitude": -0.1278,
             "fuso": "Europe/London",
             "estacao_resolucao": "EGLC",
-            "regiao": "Europa"
+            "regiao": "Europa",
+            "url_history_wu": "https://www.wunderground.com/history/daily/gb/london/EGLC/date/{data}"
         },
         {
             "nome": "New York",
@@ -16,7 +17,8 @@
             "longitude": -74.0060,
             "fuso": "America/New_York",
             "estacao_resolucao": "LaGuardia",
-            "regiao": "America"
+            "regiao": "America",
+            "url_history_wu": "https://www.wunderground.com/history/daily/us/new-york-city/KLGA/date/{data}"
         },
         {
             "nome": "Hong Kong",
@@ -25,7 +27,8 @@
             "longitude": 114.1694,
             "fuso": "Asia/Hong_Kong",
             "estacao_resolucao": "VHHH",
-            "regiao": "Asia"
+            "regiao": "Asia",
+            "url_history_wu": "https://www.wunderground.com/history/daily/hk/hong-kong/VHHH/date/{data}"
         },
         {
             "nome": "Istanbul",
@@ -34,7 +37,8 @@
             "longitude": 28.9784,
             "fuso": "Europe/Istanbul",
             "estacao_resolucao": "a_mapear",
-            "regiao": "Europa"
+            "regiao": "Europa",
+            "url_history_wu": "https://www.wunderground.com/history/daily/tr/istanbul/LTFM/date/{data}"
         },
         {
             "nome": "Moscow",
@@ -43,7 +47,8 @@
             "longitude": 37.6173,
             "fuso": "Europe/Moscow",
             "estacao_resolucao": "a_mapear",
-            "regiao": "Europa"
+            "regiao": "Europa",
+            "url_history_wu": "https://www.wunderground.com/history/daily/ru/moscow/UUEE/date/{data}"
         },
         {
             "nome": "Paris",
@@ -52,7 +57,8 @@
             "longitude": 2.3522,
             "fuso": "Europe/Paris",
             "estacao_resolucao": "a_mapear",
-            "regiao": "Europa"
+            "regiao": "Europa",
+            "url_history_wu": "https://www.wunderground.com/history/daily/fr/paris/LFPG/date/{data}"
         },
         {
             "nome": "Seoul",
@@ -61,7 +67,8 @@
             "longitude": 126.9780,
             "fuso": "Asia/Seoul",
             "estacao_resolucao": "a_mapear",
-            "regiao": "Asia"
+            "regiao": "Asia",
+            "url_history_wu": "https://www.wunderground.com/history/daily/kr/seoul/RKSS/date/{data}"
         },
         {
             "nome": "Tokyo",
@@ -70,7 +77,8 @@
             "longitude": 139.6503,
             "fuso": "Asia/Tokyo",
             "estacao_resolucao": "a_mapear",
-            "regiao": "Asia"
+            "regiao": "Asia",
+            "url_history_wu": "https://www.wunderground.com/history/daily/jp/tokyo/RJTT/date/{data}"
         },
         {
             "nome": "Chicago",
@@ -79,7 +87,8 @@
             "longitude": -87.6298,
             "fuso": "America/Chicago",
             "estacao_resolucao": "a_mapear",
-            "regiao": "America"
+            "regiao": "America",
+            "url_history_wu": "https://www.wunderground.com/history/daily/us/chicago/KORD/date/{data}"
         },
         {
             "nome": "Madrid",
@@ -88,7 +97,8 @@
             "longitude": -3.7038,
             "fuso": "Europe/Madrid",
             "estacao_resolucao": "a_mapear",
-            "regiao": "Europa"
+            "regiao": "Europa",
+            "url_history_wu": "https://www.wunderground.com/history/daily/es/madrid/LEMD/date/{data}"
         }
     ]
 }
