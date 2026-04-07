@@ -138,8 +138,12 @@ class ColetorWU:
 
     async def coletar_previsao(
         self, latitude: float, longitude: float, unidade: str
-    ) -> Optional[float]:
-        """Busca previsao de temperatura maxima de hoje no WU forecast."""
+    ) -> Optional[dict[str, Any]]:
+        """Busca previsao de temperatura maxima do WU forecast.
+
+        Retorna dict com 'data_local' e 'temp_max' pra cada dia disponivel,
+        ou None se falhar. Retorna os 2 primeiros dias (hoje e amanha local).
+        """
         unidade_param = "m" if unidade == "C" else "e"
         url = "https://api.weather.com/v3/wx/forecast/daily/5day"
         params = {
@@ -155,9 +159,16 @@ class ColetorWU:
                 r.raise_for_status()
                 dados = r.json()
                 maximas = dados.get("calendarDayTemperatureMax", [])
-                if maximas:
-                    return float(maximas[0])  # previsao de hoje
-                return None
+                datas_local = dados.get("validTimeLocal", [])
+                resultado = []
+                for i in range(min(2, len(maximas))):
+                    if maximas[i] is not None:
+                        data_str = datas_local[i][:10] if i < len(datas_local) else None
+                        resultado.append({
+                            "data_local": data_str,
+                            "temp_max": float(maximas[i]),
+                        })
+                return resultado if resultado else None
         except Exception as e:
             logger.warning(f"Erro ao buscar previsao WU: {e}")
             return None
