@@ -1,0 +1,94 @@
+{
+    "cidades": [
+        {
+            "nome": "London",
+            "nome_polymarket": "London",
+            "latitude": 51.5074,
+            "longitude": -0.1278,
+            "fuso": "Europe/London",
+            "estacao_resolucao": "EGLC",
+            "regiao": "Europa"
+        },
+        {
+            "nome": "New York",
+            "nome_polymarket": "NYC",
+            "latitude": 40.7128,
+            "longitude": -74.0060,
+            "fuso": "America/New_York",
+            "estacao_resolucao": "LaGuardia",
+            "regiao": "America"
+        },
+        {
+            "nome": "Hong Kong",
+            "nome_polymarket": "Hong Kong",
+            "latitude": 22.3193,
+            "longitude": 114.1694,
+            "fuso": "Asia/Hong_Kong",
+            "estacao_resolucao": "VHHH",
+            "regiao": "Asia"
+        },
+        {
+            "nome": "Istanbul",
+            "nome_polymarket": "Istanbul",
+            "latitude": 41.0082,
+            "longitude": 28.9784,
+            "fuso": "Europe/Istanbul",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "Europa"
+        },
+        {
+            "nome": "Moscow",
+            "nome_polymarket": "Moscow",
+            "latitude": 55.7558,
+            "longitude": 37.6173,
+            "fuso": "Europe/Moscow",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "Europa"
+        },
+        {
+            "nome": "Paris",
+            "nome_polymarket": "Paris",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "fuso": "Europe/Paris",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "Europa"
+        },
+        {
+            "nome": "Seoul",
+            "nome_polymarket": "Seoul",
+            "latitude": 37.5665,
+            "longitude": 126.9780,
+            "fuso": "Asia/Seoul",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "Asia"
+        },
+        {
+            "nome": "Tokyo",
+            "nome_polymarket": "Tokyo",
+            "latitude": 35.6762,
+            "longitude": 139.6503,
+            "fuso": "Asia/Tokyo",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "Asia"
+        },
+        {
+            "nome": "Chicago",
+            "nome_polymarket": "Chicago",
+            "latitude": 41.8781,
+            "longitude": -87.6298,
+            "fuso": "America/Chicago",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "America"
+        },
+        {
+            "nome": "Madrid",
+            "nome_polymarket": "Madrid",
+            "latitude": 40.4168,
+            "longitude": -3.7038,
+            "fuso": "Europe/Madrid",
+            "estacao_resolucao": "a_mapear",
+            "regiao": "Europa"
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    "modelo": {
+        "pesos_fontes": {
+            "ecmwf": 0.30,
+            "gfs": 0.25,
+            "wunderground": 0.20,
+            "openweathermap": 0.10,
+            "accuweather": 0.10,
+            "visual_crossing": 0.05
+        },
+        "desvio_base": {
+            "D-1": 0.5,
+            "D-2": 1.2
+        },
+        "divergencia_threshold_c": 2.0,
+        "proximidade_reduz_desvio_horas": 12,
+        "fator_reducao_proximidade": 0.7
+    },
+    "edge": {
+        "D-1": {
+            "edge_minimo": 5,
+            "confianca_minima": "MEDIA",
+            "retorno_minimo": 2.0,
+            "liquidez_minima_usd": 1000
+        },
+        "D-2": {
+            "edge_minimo": 8,
+            "confianca_minima": "ALTA",
+            "retorno_minimo": 3.0,
+            "liquidez_minima_usd": 1000
+        }
+    },
+    "estrelas": {
+        "5": {"edge_min": 15, "confianca_min": "ALTA", "retorno_min": 5.0},
+        "4": {"edge_min": 10, "confianca_min": "ALTA", "retorno_min": 2.0},
+        "3": {"edge_min": 7, "confianca_min": "MEDIA", "retorno_min": 2.0},
+        "2": {"edge_min": 5, "confianca_min": "MEDIA", "retorno_min": 1.5}
+    },
+    "coleta": {
+        "intervalo_horas": 6,
+        "wunderground_intervalo_minutos": 60,
+        "wunderground_ultimas_horas": 12
+    },
+    "polymarket": {
+        "gamma_api_base": "https://gamma-api.polymarket.com"
+    },
+    "dashboard": {
+        "auto_refresh_minutos": 30
+    }
+}
