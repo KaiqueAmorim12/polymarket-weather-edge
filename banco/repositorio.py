@@ -131,6 +131,12 @@ class Repositorio:
         )
         row = dict(cursor.fetchone())
         conn.close()
+        # Quando nao tem apostas, SUM retorna None — tratar como 0
+        row["ganhou"] = row["ganhou"] or 0
+        row["perdeu"] = row["perdeu"] or 0
+        row["aguardando"] = row["aguardando"] or 0
+        row["pnl_total"] = row["pnl_total"] or 0
+        row["total_investido"] = row["total_investido"] or 0
         total_resolvidas = row["ganhou"] + row["perdeu"]
         row["win_rate"] = (row["ganhou"] / total_resolvidas * 100) if total_resolvidas > 0 else 0
         row["roi"] = (row["pnl_total"] / row["total_investido"] * 100) if row["total_investido"] > 0 else 0
