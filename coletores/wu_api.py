@@ -37,16 +37,35 @@ class ColetorWU:
         unidade: str,
         fuso_offset: float,
     ) -> list[LeituraHoraria]:
-        """Busca todas as leituras de um dia pra uma estacao."""
-        data_formatada = data_alvo.replace("-", "")
-        unidade_param = "m" if unidade == "C" else "e"
+        """Busca todas as leituras de um dia LOCAL pra uma estacao.
 
+        O WU API retorna dados em UTC. Pra fusos positivos (ex: Tokyo UTC+9),
+        pedimos o dia anterior tambem pra cobrir a manha local.
+        Pra fusos negativos (ex: NYC UTC-4), pedimos o dia seguinte tambem.
+        Depois filtramos so as leituras do dia LOCAL correto.
+        """
+        unidade_param = "m" if unidade == "C" else "e"
         url = WU_BASE_URL.format(estacao=estacao)
+
+        # Calcular range de datas UTC que cobre o dia local inteiro
+        dt_alvo = datetime.strptime(data_alvo, "%Y-%m-%d").date()
+        if fuso_offset > 0:
+            # Fuso positivo: manha local = dia anterior UTC
+            data_inicio = (dt_alvo - timedelta(days=1)).strftime("%Y%m%d")
+        else:
+            data_inicio = dt_alvo.strftime("%Y%m%d")
+
+        if fuso_offset < 0:
+            # Fuso negativo: noite local = dia seguinte UTC
+            data_fim = (dt_alvo + timedelta(days=1)).strftime("%Y%m%d")
+        else:
+            data_fim = dt_alvo.strftime("%Y%m%d")
+
         params = {
             "apiKey": WU_API_KEY,
             "units": unidade_param,
-            "startDate": data_formatada,
-            "endDate": data_formatada,
+            "startDate": data_inicio,
+            "endDate": data_fim,
         }
 
         try:
@@ -54,12 +73,25 @@ class ColetorWU:
                 resposta = await client.get(url, params=params)
                 resposta.raise_for_status()
                 dados = resposta.json()
-                leituras = self._parsear_resposta(dados, unidade, fuso_offset)
-                logger.info(f"WU {estacao}: {len(leituras)} leituras para {data_alvo}")
+                todas_leituras = self._parsear_resposta(dados, unidade, fuso_offset)
+
+                # Filtrar so leituras do dia LOCAL correto
+                leituras = [
+                    l for l in todas_leituras
+                    if self._data_local(l.timestamp, fuso_offset) == data_alvo
+                ]
+
+                logger.info(f"WU {estacao}: {len(leituras)} leituras locais para {data_alvo}")
                 return leituras
         except Exception as e:
             logger.warning(f"Erro ao coletar WU {estacao}: {e}")
             return []
+
+    def _data_local(self, timestamp: int, fuso_offset: float) -> str:
+        """Retorna a data local (YYYY-MM-DD) de um timestamp UTC."""
+        dt_utc = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        dt_local = dt_utc + timedelta(hours=fuso_offset)
+        return dt_local.strftime("%Y-%m-%d")
 
     def _parsear_resposta(
         self,
