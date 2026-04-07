@@ -1,0 +1,116 @@
+{
+  "data_execucao": "2026-04-07",
+  "d1": "2026-04-08",
+  "d2": "2026-04-09",
+  "total_oportunidades": 9,
+  "oportunidades": [
+    {
+      "id": 29,
+      "cidade": "New York",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 9,
+      "prob_modelo": 0.6550689935769033,
+      "prob_mercado": 0.3935,
+      "edge": 26.156899357690328,
+      "recomendacao": "COMPRAR",
+      "estrelas": 4
+    },
+    {
+      "id": 92,
+      "cidade": "Moscow",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 4,
+      "prob_modelo": 0.5774930299136861,
+      "prob_mercado": 0.334,
+      "edge": 24.34930299136861,
+      "recomendacao": "COMPRAR",
+      "estrelas": 4
+    },
+    {
+      "id": 143,
+      "cidade": "Seoul",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 15,
+      "prob_modelo": 0.588338386649501,
+      "prob_mercado": 0.115,
+      "edge": 47.3338386649501,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    },
+    {
+      "id": 10,
+      "cidade": "London",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 23,
+      "prob_modelo": 0.5039705469399881,
+      "prob_mercado": 0.215,
+      "edge": 28.897054693998815,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    },
+    {
+      "id": 115,
+      "cidade": "Paris",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 22,
+      "prob_modelo": 0.31061771572456764,
+      "prob_mercado": 0.095,
+      "edge": 21.561771572456763,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    },
+    {
+      "id": 116,
+      "cidade": "Paris",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 23,
+      "prob_modelo": 0.4469562217650596,
+      "prob_mercado": 0.275,
+      "edge": 17.19562217650596,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    },
+    {
+      "id": 9,
+      "cidade": "London",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 22,
+      "prob_modelo": 0.18310662786912602,
+      "prob_mercado": 0.045,
+      "edge": 13.810662786912603,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    },
+    {
+      "id": 162,
+      "cidade": "Tokyo",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 17,
+      "prob_modelo": 0.5025909032390442,
+      "prob_mercado": 0.38,
+      "edge": 12.25909032390442,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    },
+    {
+      "id": 142,
+      "cidade": "Seoul",
+      "data_alvo": "2026-04-08",
+      "horizonte": "D-1",
+      "faixa_grau": 14,
+      "prob_modelo": 0.30662166578090433,
+      "prob_mercado": 0.2,
+      "edge": 10.662166578090432,
+      "recomendacao": "COMPRAR",
+      "estrelas": 3
+    }
+  ]
+}

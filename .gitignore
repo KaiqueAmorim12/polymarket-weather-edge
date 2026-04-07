@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 venv/
 .env
-dados/*.db
+# banco SQLite commitado pro GitHub Actions persistir entre execucoes
 logs/*.log
 .mypy_cache/
 .pytest_cache/
