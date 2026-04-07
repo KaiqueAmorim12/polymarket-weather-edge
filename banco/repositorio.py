@@ -229,6 +229,26 @@ class Repositorio:
         conn.close()
         return resultado
 
+    def limpar_analises_antigas(self, cidade: str, data_alvo: str, horizonte: str) -> None:
+        """Remove analises anteriores antes de recalcular."""
+        conn = self._conectar()
+        conn.execute(
+            "DELETE FROM analises WHERE cidade = ? AND data_alvo = ? AND horizonte = ?",
+            (cidade, data_alvo, horizonte),
+        )
+        conn.commit()
+        conn.close()
+
+    def limpar_odds_antigas(self, cidade: str, data_alvo: str) -> None:
+        """Remove odds anteriores antes de re-coletar."""
+        conn = self._conectar()
+        conn.execute(
+            "DELETE FROM odds_polymarket WHERE cidade = ? AND data_alvo = ?",
+            (cidade, data_alvo),
+        )
+        conn.commit()
+        conn.close()
+
     def limpar_previsoes_antigas(self, cidade: str, data_alvo: str) -> None:
         """Remove previsoes anteriores pra evitar duplicatas na re-coleta."""
         conn = self._conectar()

@@ -144,6 +144,7 @@ async def executar_ciclo_cidade(
         logger.warning(f"{nome}: nenhuma odd encontrada na Polymarket")
         return
 
+    repo.limpar_odds_antigas(nome, data_alvo)
     agora = datetime.now(timezone.utc).isoformat()
     for odd in odds:
         repo.salvar_odds(
@@ -158,6 +159,7 @@ async def executar_ciclo_cidade(
         )
 
     # 4. Calcular edge
+    repo.limpar_analises_antigas(nome, data_alvo, horizonte)
     analises = calcular_edge(distribuicao, odds)
     recomendacoes = gerar_recomendacoes(analises, horizonte)
 
