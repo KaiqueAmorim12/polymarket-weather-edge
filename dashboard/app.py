@@ -1,5 +1,6 @@
-"""Dashboard WeatherEdge — tela principal Streamlit."""
+"""Dashboard WeatherEdge v2 — Monitor de Temperatura em Tempo Real."""
 import sys
+import json
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -8,177 +9,103 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from banco import Repositorio, criar_tabelas
-from dashboard.componentes import estrelas_texto, grafico_distribuicao, grafico_edge
+from dashboard.estilos import CSS
 
 RAIZ = Path(__file__).parent.parent
 CAMINHO_DB = RAIZ / "dados" / "weather_edge.db"
+CAMINHO_CIDADES = RAIZ / "config" / "cidades.json"
 
-st.set_page_config(
-    page_title="WeatherEdge",
-    page_icon="W",
-    layout="wide",
-)
+st.set_page_config(page_title="WeatherEdge", page_icon="W", layout="wide")
+st.markdown(CSS, unsafe_allow_html=True)
 
 
-def inicializar_banco() -> Repositorio:
-    """Inicializa banco se nao existir e retorna repositorio."""
+def carregar_cidades() -> list[dict]:
+    with open(CAMINHO_CIDADES, encoding="utf-8") as f:
+        return json.load(f)["cidades"]
+
+
+def inicializar() -> Repositorio:
     CAMINHO_DB.parent.mkdir(parents=True, exist_ok=True)
     criar_tabelas(str(CAMINHO_DB))
     return Repositorio(str(CAMINHO_DB))
 
 
-def tela_principal(repo: Repositorio) -> None:
-    """Tela principal — visao geral do dia."""
+def tela_principal(repo: Repositorio, cidades: list[dict]) -> None:
     st.title("WeatherEdge")
-    st.caption("Sistema de Value Betting em Contratos de Clima da Polymarket")
+    st.caption("Monitor de Temperatura em Tempo Real — Weather Underground + Polymarket")
 
-    hoje = date.today()
-    d1 = (hoje + timedelta(days=1)).isoformat()
-    d2 = (hoje + timedelta(days=2)).isoformat()
+    hoje = date.today().isoformat()
 
-    st.markdown(f"**D-1:** {d1} | **D-2:** {d2}")
+    col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
+    with col_f1:
+        regiao = st.selectbox("Regiao", ["Todas", "Asia", "Europa", "Americas", "Oceania"])
+    with col_f2:
+        ordenar = st.selectbox("Ordenar por", ["Horario BRT", "Temperatura", "Nome"])
+    with col_f3:
+        st.write("")
+        st.write("")
+        if st.button("Atualizar"):
+            st.rerun()
 
-    st.subheader("Oportunidades Encontradas")
+    cidades_filtradas = cidades
+    if regiao != "Todas":
+        cidades_filtradas = [c for c in cidades if c["regiao"] == regiao]
 
-    analises_d1 = repo.buscar_todas_analises_do_dia(d1)
-    analises_d2 = repo.buscar_todas_analises_do_dia(d2)
-    todas = analises_d1 + analises_d2
+    if ordenar == "Horario BRT":
+        cidades_filtradas = sorted(cidades_filtradas, key=lambda c: c["fuso_offset"], reverse=True)
+    elif ordenar == "Nome":
+        cidades_filtradas = sorted(cidades_filtradas, key=lambda c: c["nome"])
 
-    recomendadas = [a for a in todas if a["recomendacao"] == "COMPRAR"]
+    st.subheader("Cidades Monitoradas")
 
-    if not recomendadas:
-        st.info("Nenhuma oportunidade encontrada. Execute main.py para coletar dados.")
-    else:
-        for rec in recomendadas:
-            col1, col2, col3, col4, col5 = st.columns([1, 2, 1, 1, 1])
-            with col1:
-                st.write(estrelas_texto(rec["estrelas"]))
-            with col2:
-                st.write(f"**{rec['cidade']}** ({rec['data_alvo']})")
-            with col3:
-                horizonte = rec.get("horizonte", "D-1")
-                st.write(f"`{horizonte}`")
-            with col4:
-                st.write(f"**{rec['faixa_grau']}°C** a {rec['prob_mercado']:.0%}")
-            with col5:
-                st.write(f"Edge **+{rec['edge']:.1f}** pts")
+    for i in range(0, len(cidades_filtradas), 4):
+        cols = st.columns(4)
+        for j, col in enumerate(cols):
+            idx = i + j
+            if idx >= len(cidades_filtradas):
+                break
+            cidade = cidades_filtradas[idx]
+            nome = cidade["nome"]
+            unidade = cidade["unidade"]
+            leituras = repo.buscar_leituras(nome, hoje)
 
-    st.subheader("Todas as Cidades")
+            with col:
+                with st.container(border=True):
+                    if leituras:
+                        temp_atual = leituras[-1]["temperatura"]
+                        pico = max(leituras, key=lambda l: l["temperatura"])
+                        if len(leituras) >= 2:
+                            diff = leituras[-1]["temperatura"] - leituras[-2]["temperatura"]
+                            seta = "^" if diff > 0 else "v" if diff < 0 else "="
+                            status = "Subindo" if diff > 0 else "Descendo" if diff < 0 else "Estavel"
+                        else:
+                            seta = ""
+                            status = ""
 
-    tab_d1, tab_d2 = st.tabs(["D-1 (Amanha)", "D-2 (Depois de amanha)"])
+                        st.markdown(f"**{nome}** ({unidade})")
+                        st.markdown(f"### {temp_atual} {seta}")
+                        st.caption(f"Pico: {pico['temperatura']} as {pico['hora_local']} | {status}")
 
-    for tab, analises, label in [(tab_d1, analises_d1, d1), (tab_d2, analises_d2, d2)]:
-        with tab:
-            if not analises:
-                st.info(f"Sem dados para {label}. Execute main.py.")
-                continue
-
-            cidades_vistas: set[str] = set()
-            for a in analises:
-                cidade = a["cidade"]
-                if cidade in cidades_vistas:
-                    continue
-                cidades_vistas.add(cidade)
-
-                analises_cidade = [x for x in analises if x["cidade"] == cidade]
-                melhor = max(analises_cidade, key=lambda x: x["edge"])
-
-                col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
-                with col1:
-                    if st.button(f"Ver {cidade}", key=f"btn_{cidade}_{label}"):
-                        st.session_state["cidade_detalhe"] = cidade
-                        st.session_state["data_detalhe"] = label
-                        st.rerun()
-                with col2:
-                    st.write(f"{melhor['faixa_grau']}°C")
-                with col3:
-                    cor = "+" if melhor["edge"] > 5 else "~" if melhor["edge"] > 0 else "-"
-                    st.write(f"{cor} {melhor['edge']:+.1f}")
-                with col4:
-                    st.write(estrelas_texto(melhor["estrelas"]))
-                with col5:
-                    st.write(melhor["recomendacao"])
-
-
-def tela_detalhe_cidade(repo: Repositorio, cidade: str, data_alvo: str) -> None:
-    """Tela de detalhe — distribuicao e edge pra uma cidade."""
-    st.subheader(f"{cidade} — {data_alvo}")
-
-    if st.button("Voltar"):
-        del st.session_state["cidade_detalhe"]
-        st.rerun()
-
-    for horizonte in ["D-1", "D-2"]:
-        st.markdown(f"### {horizonte}")
-
-        distribuicoes = repo.buscar_distribuicoes(cidade, data_alvo, horizonte)
-        odds = repo.buscar_odds(cidade, data_alvo)
-        analises = repo.buscar_analises(cidade, data_alvo, horizonte)
-
-        if not distribuicoes:
-            st.info(f"Sem dados {horizonte}")
-            continue
-
-        faixas_modelo = {d["faixa_grau"]: d["probabilidade"] for d in distribuicoes}
-        faixas_mercado = {o["faixa_grau"]: o["preco_compra"] for o in odds}
-        faixas_edge = {a["faixa_grau"]: a["edge"] for a in analises}
-
-        todas_faixas = sorted(set(list(faixas_modelo.keys()) + list(faixas_mercado.keys())))
-
-        prob_modelo = [faixas_modelo.get(f, 0) for f in todas_faixas]
-        prob_mercado = [faixas_mercado.get(f, 0) for f in todas_faixas]
-        edges = [faixas_edge.get(f, 0) for f in todas_faixas]
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.plotly_chart(
-                grafico_distribuicao(todas_faixas, prob_modelo, prob_mercado),
-                use_container_width=True,
-            )
-        with col2:
-            st.plotly_chart(
-                grafico_edge(todas_faixas, edges),
-                use_container_width=True,
-            )
-
-        if analises:
-            st.dataframe(
-                [
-                    {
-                        "Faixa": f"{a['faixa_grau']}°C",
-                        "Modelo": f"{a['prob_modelo']:.0%}",
-                        "Mercado": f"{a['prob_mercado']:.0%}",
-                        "Edge": f"{a['edge']:+.1f}",
-                        "Estrelas": estrelas_texto(a["estrelas"]),
-                        "Rec": a["recomendacao"],
-                    }
-                    for a in analises
-                ],
-                use_container_width=True,
-            )
-
-        previsoes = repo.buscar_previsoes(cidade, data_alvo)
-        previsoes_horizonte = [p for p in previsoes if p["horizonte"] == horizonte]
-        if previsoes_horizonte:
-            with st.expander("Fontes consultadas"):
-                for p in previsoes_horizonte:
-                    st.write(f"**{p['fonte']}**: {p['temperatura_max']}°C (coletado {p['coletado_em'][:16]})")
+                        if st.button(f"Ver detalhes", key=f"det_{nome}"):
+                            st.session_state["cidade_detalhe"] = nome
+                            st.rerun()
+                    else:
+                        st.markdown(f"**{nome}** ({unidade})")
+                        st.markdown("### --")
+                        st.caption("Sem dados. Execute main.py")
 
 
 # --- Main ---
+repo = inicializar()
+cidades = carregar_cidades()
 
-repo = inicializar_banco()
+pagina = st.sidebar.radio("Navegacao", ["Monitor", "Apostas"])
 
-pagina = st.sidebar.radio("Navegacao", ["Oportunidades", "Historico"])
-
-if pagina == "Historico":
-    from dashboard.pagina_historico import tela_historico
-    tela_historico(repo)
+if pagina == "Apostas":
+    from dashboard.pagina_apostas import mostrar_apostas
+    mostrar_apostas(repo, cidades)
 elif "cidade_detalhe" in st.session_state:
-    tela_detalhe_cidade(
-        repo,
-        st.session_state["cidade_detalhe"],
-        st.session_state.get("data_detalhe", ""),
-    )
+    from dashboard.pagina_cidade import mostrar_detalhe_cidade
+    mostrar_detalhe_cidade(repo, cidades, st.session_state["cidade_detalhe"])
 else:
-    tela_principal(repo)
+    tela_principal(repo, cidades)
