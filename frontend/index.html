@@ -1242,6 +1242,13 @@ function renderizarGrafico(leituras, cidadeConfig, picoMedio) {
           borderWidth: 1,
           padding: 10,
           callbacks: {
+            title: function(items) {
+              if (!items.length) return '';
+              const idx = items[0].dataIndex;
+              const leitura = leituras[idx];
+              const data = leitura ? leitura.data_alvo : dataHoje;
+              return `${data} — ${labels[idx]} local`;
+            },
             label: function(ctx) {
               let label = `${ctx.parsed.y.toFixed(1)}°${cidadeConfig.unidade}`;
               if (ctx.dataIndex === picoIdx) label += ' (PICO)';
