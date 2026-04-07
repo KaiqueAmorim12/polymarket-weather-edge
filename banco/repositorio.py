@@ -1,11 +1,9 @@
-"""Repositorio — CRUD para o banco SQLite do WeatherEdge."""
+"""Repositorio — CRUD para o banco SQLite do WeatherEdge v2."""
 import sqlite3
 from typing import Optional
 
 
 class Repositorio:
-    """Acesso ao banco de dados SQLite."""
-
     def __init__(self, caminho_db: str) -> None:
         self.caminho_db = caminho_db
 
@@ -14,92 +12,42 @@ class Repositorio:
         conn.row_factory = sqlite3.Row
         return conn
 
-    # --- Previsoes ---
+    # --- Leituras ---
 
-    def salvar_previsao(
-        self,
-        cidade: str,
-        data_alvo: str,
-        horizonte: str,
-        fonte: str,
-        temperatura_max: float,
-        temperatura_min: float,
-        coletado_em: str,
-    ) -> None:
+    def salvar_leitura(self, cidade: str, data_alvo: str, timestamp: int,
+                       temperatura: float, hora_utc: str, hora_local: str, unidade: str) -> None:
         conn = self._conectar()
         conn.execute(
-            """INSERT INTO previsoes
-               (cidade, data_alvo, horizonte, fonte, temperatura_max, temperatura_min, coletado_em)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (cidade, data_alvo, horizonte, fonte, temperatura_max, temperatura_min, coletado_em),
+            "INSERT INTO leituras (cidade, data_alvo, timestamp, temperatura, hora_utc, hora_local, unidade) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (cidade, data_alvo, timestamp, temperatura, hora_utc, hora_local, unidade),
         )
         conn.commit()
         conn.close()
 
-    def buscar_previsoes(self, cidade: str, data_alvo: str) -> list[dict]:
+    def buscar_leituras(self, cidade: str, data_alvo: str) -> list[dict]:
         conn = self._conectar()
         cursor = conn.execute(
-            "SELECT * FROM previsoes WHERE cidade = ? AND data_alvo = ? ORDER BY coletado_em DESC",
+            "SELECT * FROM leituras WHERE cidade = ? AND data_alvo = ? ORDER BY timestamp",
             (cidade, data_alvo),
         )
         resultado = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return resultado
 
-    # --- Distribuicoes ---
-
-    def salvar_distribuicao(
-        self,
-        cidade: str,
-        data_alvo: str,
-        horizonte: str,
-        faixa_grau: int,
-        probabilidade: float,
-        media: float,
-        desvio_padrao: float,
-        confianca: str,
-    ) -> None:
+    def limpar_leituras(self, cidade: str, data_alvo: str) -> None:
         conn = self._conectar()
-        conn.execute(
-            """INSERT INTO distribuicoes
-               (cidade, data_alvo, horizonte, faixa_grau, probabilidade, media, desvio_padrao, confianca)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (cidade, data_alvo, horizonte, faixa_grau, probabilidade, media, desvio_padrao, confianca),
-        )
+        conn.execute("DELETE FROM leituras WHERE cidade = ? AND data_alvo = ?", (cidade, data_alvo))
         conn.commit()
         conn.close()
 
-    def buscar_distribuicoes(self, cidade: str, data_alvo: str, horizonte: str) -> list[dict]:
-        conn = self._conectar()
-        cursor = conn.execute(
-            """SELECT * FROM distribuicoes
-               WHERE cidade = ? AND data_alvo = ? AND horizonte = ?
-               ORDER BY faixa_grau""",
-            (cidade, data_alvo, horizonte),
-        )
-        resultado = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return resultado
+    # --- Odds ---
 
-    # --- Odds Polymarket ---
-
-    def salvar_odds(
-        self,
-        cidade: str,
-        data_alvo: str,
-        faixa_grau: int,
-        probabilidade_mercado: float,
-        preco_compra: float,
-        preco_venda: float,
-        volume: float,
-        coletado_em: str,
-    ) -> None:
+    def salvar_odds(self, cidade: str, data_alvo: str, faixa: str,
+                    preco_compra: float, volume: float, coletado_em: str) -> None:
         conn = self._conectar()
         conn.execute(
-            """INSERT INTO odds_polymarket
-               (cidade, data_alvo, faixa_grau, probabilidade_mercado, preco_compra, preco_venda, volume, coletado_em)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (cidade, data_alvo, faixa_grau, probabilidade_mercado, preco_compra, preco_venda, volume, coletado_em),
+            "INSERT INTO odds_polymarket (cidade, data_alvo, faixa, preco_compra, volume, coletado_em) VALUES (?, ?, ?, ?, ?, ?)",
+            (cidade, data_alvo, faixa, preco_compra, volume, coletado_em),
         )
         conn.commit()
         conn.close()
@@ -107,164 +55,83 @@ class Repositorio:
     def buscar_odds(self, cidade: str, data_alvo: str) -> list[dict]:
         conn = self._conectar()
         cursor = conn.execute(
+            "SELECT * FROM odds_polymarket WHERE cidade = ? AND data_alvo = ? ORDER BY coletado_em DESC",
+            (cidade, data_alvo),
+        )
+        resultado = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return resultado
+
+    def buscar_odds_mais_recentes(self, cidade: str, data_alvo: str) -> list[dict]:
+        conn = self._conectar()
+        cursor = conn.execute(
             """SELECT * FROM odds_polymarket
                WHERE cidade = ? AND data_alvo = ?
-               ORDER BY faixa_grau""",
-            (cidade, data_alvo),
+               AND coletado_em = (SELECT MAX(coletado_em) FROM odds_polymarket WHERE cidade = ? AND data_alvo = ?)
+               ORDER BY preco_compra DESC""",
+            (cidade, data_alvo, cidade, data_alvo),
         )
         resultado = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return resultado
 
-    # --- Analises ---
+    def limpar_odds(self, cidade: str, data_alvo: str) -> None:
+        conn = self._conectar()
+        conn.execute("DELETE FROM odds_polymarket WHERE cidade = ? AND data_alvo = ?", (cidade, data_alvo))
+        conn.commit()
+        conn.close()
 
-    def salvar_analise(
-        self,
-        cidade: str,
-        data_alvo: str,
-        horizonte: str,
-        faixa_grau: int,
-        prob_modelo: float,
-        prob_mercado: float,
-        edge: float,
-        recomendacao: str,
-        estrelas: int,
-    ) -> None:
+    # --- Apostas ---
+
+    def registrar_aposta(self, cidade: str, data_alvo: str, faixa: str,
+                         tipo: str, odd: float, valor: float, horario_registro: str) -> None:
         conn = self._conectar()
         conn.execute(
-            """INSERT INTO analises
-               (cidade, data_alvo, horizonte, faixa_grau, prob_modelo, prob_mercado, edge, recomendacao, estrelas)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (cidade, data_alvo, horizonte, faixa_grau, prob_modelo, prob_mercado, edge, recomendacao, estrelas),
+            "INSERT INTO apostas (cidade, data_alvo, faixa, tipo, odd, valor, horario_registro) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (cidade, data_alvo, faixa, tipo, odd, valor, horario_registro),
         )
         conn.commit()
         conn.close()
 
-    def buscar_analises(self, cidade: str, data_alvo: str, horizonte: str) -> list[dict]:
+    def resolver_aposta(self, aposta_id: int, resultado: str, pnl: float) -> None:
+        conn = self._conectar()
+        conn.execute("UPDATE apostas SET resultado = ?, pnl = ? WHERE id = ?", (resultado, pnl, aposta_id))
+        conn.commit()
+        conn.close()
+
+    def buscar_apostas_do_dia(self, data_alvo: str) -> list[dict]:
         conn = self._conectar()
         cursor = conn.execute(
-            """SELECT * FROM analises
-               WHERE cidade = ? AND data_alvo = ? AND horizonte = ?
-               ORDER BY edge DESC""",
-            (cidade, data_alvo, horizonte),
+            "SELECT * FROM apostas WHERE data_alvo = ? ORDER BY horario_registro DESC", (data_alvo,),
         )
         resultado = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return resultado
 
-    def buscar_todas_analises_do_dia(self, data_alvo: str) -> list[dict]:
+    def buscar_historico_apostas(self, limite: int = 100) -> list[dict]:
         conn = self._conectar()
         cursor = conn.execute(
-            "SELECT * FROM analises WHERE data_alvo = ? ORDER BY estrelas DESC, edge DESC",
-            (data_alvo,),
+            "SELECT * FROM apostas ORDER BY data_alvo DESC, horario_registro DESC LIMIT ?", (limite,),
         )
         resultado = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return resultado
 
-    # --- Resultados ---
-
-    def salvar_resultado(
-        self,
-        cidade: str,
-        data_alvo: str,
-        temperatura_real: float,
-        faixa_vencedora: int,
-        fonte_resolucao: str,
-    ) -> None:
-        conn = self._conectar()
-        conn.execute(
-            """INSERT INTO resultados
-               (cidade, data_alvo, temperatura_real, faixa_vencedora, fonte_resolucao)
-               VALUES (?, ?, ?, ?, ?)""",
-            (cidade, data_alvo, temperatura_real, faixa_vencedora, fonte_resolucao),
-        )
-        conn.commit()
-        conn.close()
-
-    def buscar_resultado(self, cidade: str, data_alvo: str) -> Optional[dict]:
+    def calcular_metricas(self) -> dict:
         conn = self._conectar()
         cursor = conn.execute(
-            "SELECT * FROM resultados WHERE cidade = ? AND data_alvo = ?",
-            (cidade, data_alvo),
+            """SELECT
+                COUNT(*) as total_apostas,
+                SUM(CASE WHEN resultado = 'ganhou' THEN 1 ELSE 0 END) as ganhou,
+                SUM(CASE WHEN resultado = 'perdeu' THEN 1 ELSE 0 END) as perdeu,
+                SUM(CASE WHEN resultado = 'aguardando' THEN 1 ELSE 0 END) as aguardando,
+                COALESCE(SUM(pnl), 0) as pnl_total,
+                COALESCE(SUM(valor), 0) as total_investido
+            FROM apostas"""
         )
-        row = cursor.fetchone()
+        row = dict(cursor.fetchone())
         conn.close()
-        return dict(row) if row else None
-
-    # --- Performance ---
-
-    def salvar_performance(
-        self,
-        cidade: str,
-        data_alvo: str,
-        horizonte: str,
-        acertou_faixa: bool,
-        erro_graus: float,
-        lucro_simulado: float,
-    ) -> None:
-        conn = self._conectar()
-        conn.execute(
-            """INSERT INTO performance
-               (cidade, data_alvo, horizonte, acertou_faixa, erro_graus, lucro_simulado)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (cidade, data_alvo, horizonte, int(acertou_faixa), erro_graus, lucro_simulado),
-        )
-        conn.commit()
-        conn.close()
-
-    def buscar_performance(self, cidade: Optional[str] = None, horizonte: Optional[str] = None) -> list[dict]:
-        conn = self._conectar()
-        query = "SELECT * FROM performance WHERE 1=1"
-        params: list = []
-        if cidade:
-            query += " AND cidade = ?"
-            params.append(cidade)
-        if horizonte:
-            query += " AND horizonte = ?"
-            params.append(horizonte)
-        query += " ORDER BY data_alvo DESC"
-        cursor = conn.execute(query, params)
-        resultado = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return resultado
-
-    def limpar_analises_antigas(self, cidade: str, data_alvo: str, horizonte: str) -> None:
-        """Remove analises anteriores antes de recalcular."""
-        conn = self._conectar()
-        conn.execute(
-            "DELETE FROM analises WHERE cidade = ? AND data_alvo = ? AND horizonte = ?",
-            (cidade, data_alvo, horizonte),
-        )
-        conn.commit()
-        conn.close()
-
-    def limpar_odds_antigas(self, cidade: str, data_alvo: str) -> None:
-        """Remove odds anteriores antes de re-coletar."""
-        conn = self._conectar()
-        conn.execute(
-            "DELETE FROM odds_polymarket WHERE cidade = ? AND data_alvo = ?",
-            (cidade, data_alvo),
-        )
-        conn.commit()
-        conn.close()
-
-    def limpar_previsoes_antigas(self, cidade: str, data_alvo: str) -> None:
-        """Remove previsoes anteriores pra evitar duplicatas na re-coleta."""
-        conn = self._conectar()
-        conn.execute(
-            "DELETE FROM previsoes WHERE cidade = ? AND data_alvo = ?",
-            (cidade, data_alvo),
-        )
-        conn.commit()
-        conn.close()
-
-    def limpar_distribuicoes_antigas(self, cidade: str, data_alvo: str, horizonte: str) -> None:
-        """Remove distribuicoes anteriores antes de recalcular."""
-        conn = self._conectar()
-        conn.execute(
-            "DELETE FROM distribuicoes WHERE cidade = ? AND data_alvo = ? AND horizonte = ?",
-            (cidade, data_alvo, horizonte),
-        )
-        conn.commit()
-        conn.close()
+        total_resolvidas = row["ganhou"] + row["perdeu"]
+        row["win_rate"] = (row["ganhou"] / total_resolvidas * 100) if total_resolvidas > 0 else 0
+        row["roi"] = (row["pnl_total"] / row["total_investido"] * 100) if row["total_investido"] > 0 else 0
+        return row

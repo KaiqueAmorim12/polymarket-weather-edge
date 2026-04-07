@@ -1,79 +1,49 @@
-"""Criacao das tabelas SQLite do WeatherEdge."""
+"""Criacao das tabelas SQLite do WeatherEdge v2."""
 import sqlite3
 from pathlib import Path
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS previsoes (
+CREATE TABLE IF NOT EXISTS leituras (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cidade TEXT NOT NULL,
     data_alvo TEXT NOT NULL,
-    horizonte TEXT NOT NULL,
-    fonte TEXT NOT NULL,
-    temperatura_max REAL NOT NULL,
-    temperatura_min REAL NOT NULL,
-    coletado_em TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS distribuicoes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cidade TEXT NOT NULL,
-    data_alvo TEXT NOT NULL,
-    horizonte TEXT NOT NULL,
-    faixa_grau INTEGER NOT NULL,
-    probabilidade REAL NOT NULL,
-    media REAL NOT NULL,
-    desvio_padrao REAL NOT NULL,
-    confianca TEXT NOT NULL
+    timestamp INTEGER NOT NULL,
+    temperatura REAL NOT NULL,
+    hora_utc TEXT NOT NULL,
+    hora_local TEXT NOT NULL,
+    unidade TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS odds_polymarket (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cidade TEXT NOT NULL,
     data_alvo TEXT NOT NULL,
-    faixa_grau INTEGER NOT NULL,
-    probabilidade_mercado REAL NOT NULL,
+    faixa TEXT NOT NULL,
     preco_compra REAL NOT NULL,
-    preco_venda REAL NOT NULL,
     volume REAL NOT NULL,
     coletado_em TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS analises (
+CREATE TABLE IF NOT EXISTS apostas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cidade TEXT NOT NULL,
     data_alvo TEXT NOT NULL,
-    horizonte TEXT NOT NULL,
-    faixa_grau INTEGER NOT NULL,
-    prob_modelo REAL NOT NULL,
-    prob_mercado REAL NOT NULL,
-    edge REAL NOT NULL,
-    recomendacao TEXT NOT NULL,
-    estrelas INTEGER NOT NULL
+    faixa TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    odd REAL NOT NULL,
+    valor REAL NOT NULL,
+    horario_registro TEXT NOT NULL,
+    resultado TEXT NOT NULL DEFAULT 'aguardando',
+    pnl REAL DEFAULT 0.0
 );
 
-CREATE TABLE IF NOT EXISTS resultados (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cidade TEXT NOT NULL,
-    data_alvo TEXT NOT NULL,
-    temperatura_real REAL NOT NULL,
-    faixa_vencedora INTEGER NOT NULL,
-    fonte_resolucao TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS performance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cidade TEXT NOT NULL,
-    data_alvo TEXT NOT NULL,
-    horizonte TEXT NOT NULL,
-    acertou_faixa INTEGER NOT NULL,
-    erro_graus REAL NOT NULL,
-    lucro_simulado REAL NOT NULL
-);
+CREATE INDEX IF NOT EXISTS idx_leituras_cidade_data ON leituras(cidade, data_alvo);
+CREATE INDEX IF NOT EXISTS idx_odds_cidade_data ON odds_polymarket(cidade, data_alvo);
+CREATE INDEX IF NOT EXISTS idx_apostas_data ON apostas(data_alvo);
 """
 
 
 def criar_tabelas(caminho_db: str) -> None:
-    """Cria todas as tabelas no banco SQLite."""
     Path(caminho_db).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(caminho_db)
     conn.executescript(SCHEMA)
