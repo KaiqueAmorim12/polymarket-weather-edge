@@ -1056,7 +1056,7 @@ function renderizarGrid() {
     const dadosCidade = dadosCidades[c.nome];
     const previsaoCard = dadosCidade && dadosCidade.previsao ? dadosCidade.previsao : null;
     const prevStr = previsaoCard
-      ? `<div class="city-meta" style="color:#c0c0c0;">Prev: <strong>${parseFloat(previsaoCard.temp_max_prevista).toFixed(1)}${unidade}</strong></div>`
+      ? `<div class="city-meta" style="color:#c0c0c0;">Prev ${previsaoCard.data_alvo.slice(5).replace('-','/')}: <strong>${parseFloat(previsaoCard.temp_max_prevista).toFixed(0)}${unidade}</strong> (captura ${previsaoCard.hora_captura.slice(11,16)} UTC)</div>`
       : '';
 
     html += `
