@@ -749,6 +749,20 @@ function formatarHora(horaStr) {
   return horaStr;
 }
 
+/**
+ * Converte hora local de uma cidade pra BRT (UTC-3).
+ * Ex: horaLocal="15:30", fusoOffset=1 (London BST) → UTC=14:30 → BRT=11:30
+ */
+function converterParaBRT(horaLocal, fusoOffset) {
+  if (!horaLocal || !horaLocal.includes(':')) return '—';
+  const [h, m] = horaLocal.split(':').map(Number);
+  // Hora local → UTC → BRT (UTC-3)
+  const horaUTC = h - fusoOffset;
+  const horaBRT = horaUTC + (-3);
+  const hBRT = ((horaBRT % 24) + 24) % 24;
+  return `${String(hBRT).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 /** Fetch generico para Supabase REST */
 async function supabaseFetch(endpoint) {
   try {
@@ -1043,9 +1057,12 @@ function renderizarGrid() {
         <span class="status-badge ${st.classe}">${st.texto}</span>
         <div class="city-meta">
           Pico: <strong>${a.tempMax !== null ? a.tempMax.toFixed(1) + unidade : '—'}</strong>
-          ${a.horaMax ? ' as ' + a.horaMax : ''}
+          ${a.horaMax ? ' as ' + a.horaMax + ' local' : ''}
         </div>
-        <div class="city-meta">Leituras: <strong>${a.totalLeituras || 0}</strong></div>
+        <div class="city-meta">
+          ${a.horaMax ? 'BRT: <strong>' + converterParaBRT(a.horaMax, c.fuso_offset) + '</strong>' : ''}
+          ${a.horaMax ? ' | Leituras: ' + (a.totalLeituras || 0) : 'Leituras: ' + (a.totalLeituras || 0)}
+        </div>
       </div>
     `;
   });
