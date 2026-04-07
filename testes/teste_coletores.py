@@ -159,3 +159,37 @@ class TestVisualCrossingColetor:
         assert previsao is not None
         assert previsao.fonte == "visual_crossing"
         assert previsao.temperatura_max == 19.8
+
+
+from coletores.accuweather import AccuWeatherColetor
+from coletores.wunderground import WundergroundColetor
+
+
+class TestAccuWeatherColetor:
+    def test_parsear_resposta(self) -> None:
+        resposta_mock = [
+            {
+                "Date": "2026-04-07T07:00:00+01:00",
+                "Temperature": {
+                    "Maximum": {"Value": 19.0, "Unit": "C"},
+                    "Minimum": {"Value": 7.8, "Unit": "C"},
+                },
+            }
+        ]
+
+        coletor = AccuWeatherColetor(api_key="teste")
+        previsao = coletor._parsear_resposta(resposta_mock, "2026-04-07")
+        assert previsao is not None
+        assert previsao.fonte == "accuweather"
+        assert previsao.temperatura_max == 19.0
+        assert previsao.temperatura_min == 7.8
+
+
+class TestWundergroundColetor:
+    def test_parsear_temperatura_de_texto(self) -> None:
+        coletor = WundergroundColetor()
+        previsao = coletor._parsear_temperatura_de_texto("20", "8")
+        assert previsao is not None
+        assert previsao.fonte == "wunderground"
+        assert previsao.temperatura_max == 20.0
+        assert previsao.temperatura_min == 8.0
