@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeatherEdge v2 — Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ======================================================
+       RESET E BASE
+    ====================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-main:    #080b12;
+      --bg-card:    #151c27;
+      --bg-hover:   #1a2332;
+      --text-main:  #e8edf5;
+      --text-sec:   #8892a4;
+      --gold:       #d4a017;
+      --gold-light: #f0c040;
+      --purple:     #c0c0c0;
+      --green:      #22c55e;
+      --red:        #ef4444;
+      --border:     rgba(136,146,164,0.06);
+      --radius-card: 10px;
+      --radius-btn:  6px;
+      --transition: 0.3s ease;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ======================================================
+       SCROLLBAR CUSTOMIZADA
+    ====================================================== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-main); }
+    ::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.35); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+    /* ======================================================
+       UTILITARIOS
+    ====================================================== */
+    .gold  { color: var(--gold); }
+    .green { color: var(--green); }
+    .red   { color: var(--red); }
+    .purple { color: var(--purple); }
+    .sec   { color: var(--text-sec); }
+
+    /* ======================================================
+       CARD BASE — top border gradient dourado -> prata
+    ====================================================== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      position: relative;
+      overflow: hidden;
+      transition: background var(--transition);
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--purple));
+    }
+    .card:hover { background: var(--bg-hover); }
+
+    /* ======================================================
+       BOTOES
+    ====================================================== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius-btn);
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all var(--transition);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), #b8860b);
+      color: #000;
+    }
+    .btn-gold:hover {
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(212,160,23,0.35);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid rgba(212,160,23,0.4);
+      color: var(--gold);
+    }
+    .btn-outline:hover { background: rgba(212,160,23,0.1); }
+
+    /* ======================================================
+       SELECTS / INPUTS
+    ====================================================== */
+    select, input[type="text"] {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(136,146,164,0.15);
+      border-radius: var(--radius-btn);
+      color: var(--text-main);
+      padding: 7px 12px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--transition);
+      cursor: pointer;
+    }
+    select:hover, select:focus { border-color: rgba(212,160,23,0.5); }
+    select option { background: var(--bg-card); }
+
+    /* ======================================================
+       HEADER
+    ====================================================== */
+    header {
+      background: rgba(8,11,18,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 20px;
+      max-width: 1380px;
+      margin: 0 auto;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--gold), var(--purple));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+    .logo-text span { color: var(--gold); }
+    .logo-version { font-size: 11px; color: var(--text-sec); margin-left: 6px; vertical-align: super; }
+    .header-meta { font-size: 12px; color: var(--text-sec); }
+    .header-meta strong { color: var(--gold); }
+    .header-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    /* ======================================================
+       SECTION TITLES
+    ====================================================== */
+    .section-title {
+      font-size: 16px; font-weight: 700; color: var(--text-main);
+      display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+    }
+    .section-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, rgba(212,160,23,0.3), transparent);
+    }
+    .section-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, rgba(212,160,23,0.2), rgba(192,192,192,0.2));
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    /* ======================================================
+       MAIN CONTENT
+    ====================================================== */
+    main { padding: 24px 20px 40px; max-width: 1380px; margin: 0 auto; }
+    section { margin-bottom: 36px; }
+
+    /* ======================================================
+       PAINEL CIDADES — GRID 4 COLUNAS
+    ====================================================== */
+    .city-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 1100px) { .city-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 800px)  { .city-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px)  { .city-grid { grid-template-columns: 1fr; } }
+
+    .city-card {
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: transform var(--transition), background var(--transition);
+    }
+    .city-card:hover { transform: translateY(-3px); }
+    .city-card .city-name { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .city-card .city-temp {
+      font-size: 26px; font-weight: 800; color: var(--gold);
+      line-height: 1; margin-bottom: 4px;
+    }
+    .city-card .city-arrow { font-size: 16px; }
+    .city-card .city-meta { font-size: 11px; color: var(--text-sec); margin-bottom: 4px; }
+
+    .status-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px; letter-spacing: 0.5px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .status-subindo    { background: rgba(34,197,94,0.15);  color: var(--green); }
+    .status-pico-prox  { background: rgba(212,160,23,0.15); color: var(--gold);  }
+    .status-pico-ating { background: rgba(192,192,192,0.2); color: var(--purple); }
+    .status-descendo   { background: rgba(239,68,68,0.15);  color: var(--red);   }
+
+    /* ======================================================
+       DETALHE DA CIDADE
+    ====================================================== */
+    .detail-section { display: none; }
+    .detail-section.active { display: block; }
+
+    .detail-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .detail-header h2 { font-size: 22px; font-weight: 800; }
+    .detail-header h2 span { color: var(--gold); }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    .detail-card { padding: 24px; }
+    .detail-card h3 {
+      font-size: 14px; font-weight: 700; color: var(--text-sec);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
+    }
+
+    .chart-wrapper { position: relative; width: 100%; }
+    .chart-wrapper canvas { width: 100% !important; height: 280px !important; }
+
+    .chart-info {
+      display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap;
+    }
+    .chart-info-item { font-size: 12px; }
+    .chart-info-item .label { color: var(--text-sec); }
+    .chart-info-item .val   { color: var(--text-main); font-weight: 600; }
+
+    /* ODDS LIST */
+    .odds-list { display: flex; flex-direction: column; gap: 10px; }
+    .odd-row { position: relative; }
+    .odd-label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; margin-bottom: 4px;
+    }
+    .odd-label .range { font-weight: 600; }
+    .odd-label .price { font-weight: 700; }
+    .odd-bar-track {
+      height: 8px; background: rgba(255,255,255,0.05);
+      border-radius: 4px; overflow: hidden;
+    }
+    .odd-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: rgba(192,192,192,0.5);
+      transition: width 0.6s ease;
+    }
+    .odd-row.highlighted .odd-label .range { color: var(--gold); }
+    .odd-row.highlighted .odd-bar-fill {
+      background: linear-gradient(90deg, var(--gold), rgba(212,160,23,0.5));
+    }
+
+    /* ======================================================
+       METRICAS
+    ====================================================== */
+    .metrics-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .metrics-row { grid-template-columns: repeat(2, 1fr); } }
+
+    .metric-card { padding: 18px 16px; text-align: center; }
+    .metric-card .metric-label {
+      font-size: 11px; color: var(--text-sec);
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+    }
+    .metric-card .metric-val { font-size: 28px; font-weight: 800; line-height: 1; }
+    .metric-card .metric-sub { font-size: 11px; color: var(--text-sec); margin-top: 4px; }
+
+    /* ======================================================
+       TABELA DE APOSTAS
+    ====================================================== */
+    .table-wrapper { overflow-x: auto; }
+    .bets-table { width: 100%; border-collapse: collapse; }
+    .bets-table th {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-sec); padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .bets-table td {
+      padding: 10px 12px; font-size: 13px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .bets-table tr:last-child td { border-bottom: none; }
+    .bets-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge-yes { background: rgba(34,197,94,0.15); color: var(--green); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .badge-no  { background: rgba(239,68,68,0.15); color: var(--red); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+
+    /* ======================================================
+       FOOTER
+    ====================================================== */
+    footer {
+      background: rgba(21,28,39,0.8);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-sec);
+    }
+    footer span { color: var(--gold); font-weight: 600; }
+
+    /* ======================================================
+       LIVE DOT
+    ====================================================== */
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--green); border-radius: 50%;
+      margin-right: 5px; animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ======================================================
+       LOADING SPINNER
+    ====================================================== */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px; color: var(--text-sec); gap: 10px;
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(212,160,23,0.3);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ======================================================
+       DIVIDER
+    ====================================================== */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(212,160,23,0.2), transparent);
+      margin: 8px 0 20px;
+    }
+
+    /* ======================================================
+       EMPTY STATE
+    ====================================================== */
+    .empty-state {
+      text-align: center; padding: 40px 20px;
+      color: var(--text-sec); font-size: 14px;
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+
+    /* ======================================================
+       TOOLTIP
+    ====================================================== */
+    [data-tip] { position: relative; cursor: help; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 6px);
+      left: 50%; transform: translateX(-50%);
+      background: #1e293b; color: var(--text-main);
+      font-size: 11px; padding: 4px 8px; border-radius: 4px;
+      white-space: nowrap; pointer-events: none;
+      border: 1px solid var(--border); z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     1. HEADER
+============================================================ -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">&#127777;</div>
+      <div>
+        <div class="logo-text">Weather<span>Edge</span><sup class="logo-version">v2</sup></div>
+      </div>
+    </div>
+
+    <div class="header-meta">
+      <span class="live-dot"></span>
+      <span id="live-label">LIVE</span> &nbsp;|&nbsp;
+      <span id="header-data">Carregando...</span> &nbsp;|&nbsp;
+      <span id="header-cidades-count">0 cidades</span>
+    </div>
+
+    <div class="header-filters">
+      <select id="filtro-regiao">
+        <option value="todas">Todas as regioes</option>
+        <option value="Asia">Asia</option>
+        <option value="Europa">Europa</option>
+        <option value="Americas">Americas</option>
+        <option value="Oceania">Oceania</option>
+      </select>
+      <select id="filtro-ordem">
+        <option value="nome">Ordenar: Nome</option>
+        <option value="temp-desc">Ordenar: Temp (maior)</option>
+        <option value="temp-asc">Ordenar: Temp (menor)</option>
+        <option value="fuso">Ordenar: Fuso horario</option>
+      </select>
+      <button class="btn btn-outline" onclick="carregarTudo()">&#x27F3; Atualizar</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     MAIN
+============================================================ -->
+<main>
+
+  <!-- ==========================================================
+       2. PAINEL DE CIDADES — GRID
+  ========================================================== -->
+  <section id="secao-cidades">
+    <div class="section-title">
+      <div class="section-icon">&#127777;</div>
+      Painel de Cidades — Resumo ao Vivo
+    </div>
+    <div id="city-grid" class="city-grid">
+      <div class="loading"><div class="spinner"></div> Carregando dados...</div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       3. DETALHE DA CIDADE
+  ========================================================== -->
+  <section id="secao-detalhe" class="detail-section">
+    <div class="detail-header">
+      <button class="btn btn-outline" onclick="voltarParaGrid()">&#8592; Voltar</button>
+      <h2 id="detalhe-titulo">Cidade</h2>
+    </div>
+    <div class="detail-grid">
+      <!-- Grafico -->
+      <div class="card detail-card">
+        <h3>Curva de Temperatura</h3>
+        <div class="chart-wrapper">
+          <canvas id="temp-chart"></canvas>
+        </div>
+        <div class="chart-info" id="chart-info"></div>
+      </div>
+      <!-- Odds -->
+      <div class="card detail-card">
+        <h3>Odds Polymarket</h3>
+        <div id="odds-list" class="odds-list">
+          <div class="loading"><div class="spinner"></div> Carregando odds...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================================
+       4. APOSTAS
+  ========================================================== -->
+  <section id="secao-apostas">
+    <div class="section-title">
+      <div class="section-icon">&#128176;</div>
+      Historico de Apostas
+    </div>
+
+    <!-- Metricas -->
+    <div class="metrics-row" id="metricas-row">
+      <div class="card metric-card">
+        <div class="metric-label">Total Apostas</div>
+        <div class="metric-val gold" id="m-total">—</div>
+      </div>
+      <div class="card metric-card">
+        <div class="metric-label">Win Rate</div>
+        <div class="metric-val green" id="m-winrate">—</div>
+      </div>
+      <div class="card metric-card">
+        <div class="metric-label">P&amp;L Total</div>
+        <div class="metric-val" id="m-pnl">—</div>
+      </div>
+      <div class="card metric-card">
+        <div class="metric-label">ROI</div>
+        <div class="metric-val" id="m-roi">—</div>
+      </div>
+    </div>
+
+    <!-- Tabela de apostas -->
+    <div class="card" style="padding: 0;">
+      <div class="table-wrapper">
+        <table class="bets-table" id="tabela-apostas">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cidade</th>
+              <th>Faixa</th>
+              <th>Tipo</th>
+              <th>Odd</th>
+              <th>Valor</th>
+              <th>Resultado</th>
+              <th>P&amp;L</th>
+            </tr>
+          </thead>
+          <tbody id="apostas-body">
+            <tr><td colspan="8" class="loading"><div class="spinner"></div> Carregando apostas...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     5. FOOTER
+============================================================ -->
+<footer>
+  <span>WeatherEdge v2</span> — Dados: Weather Underground | Odds: Polymarket
+  &nbsp;|&nbsp; Auto-refresh a cada 5 min
+  &nbsp;|&nbsp; <span id="footer-update"></span>
+</footer>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+// ==============================================================
+// CONFIGURACAO SUPABASE
+// ==============================================================
+const SUPABASE_URL = 'https://wzjdthcxlsopmqcwtvla.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6amR0aGN4bHNvcG1xY3d0dmxhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MzY2NjMsImV4cCI6MjA3MzExMjY2M30.ZnAUBX0K9HTMrV0ddynkZbqEyYJtDdz6vU5D83k6B6w';
+
+// Headers padrao para todas as requisicoes
+const HEADERS = {
+  'apikey': SUPABASE_ANON_KEY,
+  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+  'Content-Type': 'application/json'
+};
+
+// ==============================================================
+// CIDADES
+// ==============================================================
+const CIDADES = [
+  {nome: "Wellington", unidade: "C", fuso_offset: 12, regiao: "Oceania"},
+  {nome: "Seoul", unidade: "C", fuso_offset: 9, regiao: "Asia"},
+  {nome: "Tokyo", unidade: "C", fuso_offset: 9, regiao: "Asia"},
+  {nome: "Busan", unidade: "C", fuso_offset: 9, regiao: "Asia"},
+  {nome: "Shanghai", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Hong Kong", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Beijing", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Chongqing", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Taipei", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Singapore", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Kuala Lumpur", unidade: "C", fuso_offset: 8, regiao: "Asia"},
+  {nome: "Jakarta", unidade: "C", fuso_offset: 7, regiao: "Asia"},
+  {nome: "Lucknow", unidade: "C", fuso_offset: 5.5, regiao: "Asia"},
+  {nome: "Moscow", unidade: "C", fuso_offset: 3, regiao: "Europa"},
+  {nome: "Ankara", unidade: "C", fuso_offset: 3, regiao: "Europa"},
+  {nome: "Istanbul", unidade: "C", fuso_offset: 3, regiao: "Europa"},
+  {nome: "Tel Aviv", unidade: "C", fuso_offset: 3, regiao: "Europa"},
+  {nome: "Helsinki", unidade: "C", fuso_offset: 3, regiao: "Europa"},
+  {nome: "Warsaw", unidade: "C", fuso_offset: 2, regiao: "Europa"},
+  {nome: "Paris", unidade: "C", fuso_offset: 2, regiao: "Europa"},
+  {nome: "Amsterdam", unidade: "C", fuso_offset: 2, regiao: "Europa"},
+  {nome: "Madrid", unidade: "C", fuso_offset: 2, regiao: "Europa"},
+  {nome: "Milan", unidade: "C", fuso_offset: 2, regiao: "Europa"},
+  {nome: "London", unidade: "C", fuso_offset: 1, regiao: "Europa"},
+  {nome: "Sao Paulo", unidade: "C", fuso_offset: -3, regiao: "Americas"},
+  {nome: "Buenos Aires", unidade: "C", fuso_offset: -3, regiao: "Americas"},
+  {nome: "Toronto", unidade: "C", fuso_offset: -4, regiao: "Americas"},
+  {nome: "NYC", unidade: "F", fuso_offset: -4, regiao: "Americas"},
+  {nome: "Panama", unidade: "C", fuso_offset: -5, regiao: "Americas"},
+  {nome: "Chicago", unidade: "F", fuso_offset: -5, regiao: "Americas"},
+  {nome: "Mexico City", unidade: "C", fuso_offset: -6, regiao: "Americas"},
+  {nome: "Denver", unidade: "F", fuso_offset: -6, regiao: "Americas"},
+  {nome: "Miami", unidade: "F", fuso_offset: -4, regiao: "Americas"},
+  {nome: "Seattle", unidade: "F", fuso_offset: -7, regiao: "Americas"},
+];
+
+// ==============================================================
+// ESTADO GLOBAL
+// ==============================================================
+let dadosCidades = {};     // {cidade: {leituras: [], odds: []}}
+let dadosApostas = [];
+let cidadeSelecionada = null;
+let chartInstance = null;
+
+// ==============================================================
+// UTILIDADES
+// ==============================================================
+
+/** Retorna data no formato YYYY-MM-DD para a data-alvo (hoje em UTC) */
+function dataHojeUTC() {
+  const agora = new Date();
+  return agora.toISOString().split('T')[0];
+}
+
+/** Formata hora local a partir de string hora_local ou timestamp */
+function formatarHora(horaStr) {
+  if (!horaStr) return '—';
+  // Se ja e no formato HH:MM ou similar
+  if (typeof horaStr === 'string' && horaStr.includes(':')) {
+    return horaStr.substring(0, 5);
+  }
+  return horaStr;
+}
+
+/** Fetch generico para Supabase REST */
+async function supabaseFetch(endpoint) {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, { headers: HEADERS });
+    if (!resp.ok) {
+      console.error(`Erro Supabase (${resp.status}):`, await resp.text());
+      return [];
+    }
+    return await resp.json();
+  } catch (err) {
+    console.error('Erro de rede:', err);
+    return [];
+  }
+}
+
+// ==============================================================
+// CARREGAR DADOS DO SUPABASE
+// ==============================================================
+
+/** Carrega leituras de uma cidade para data de hoje */
+async function carregarLeituras(cidade) {
+  const data = dataHojeUTC();
+  const endpoint = `we_leituras?cidade=eq.${encodeURIComponent(cidade)}&data_alvo=eq.${data}&order=timestamp_wu`;
+  return await supabaseFetch(endpoint);
+}
+
+/** Carrega odds de uma cidade para data de hoje */
+async function carregarOdds(cidade) {
+  const data = dataHojeUTC();
+  const endpoint = `we_odds?cidade=eq.${encodeURIComponent(cidade)}&data_alvo=eq.${data}&order=coletado_em.desc`;
+  return await supabaseFetch(endpoint);
+}
+
+/** Carrega historico de apostas */
+async function carregarApostas() {
+  const endpoint = `we_apostas?order=data_alvo.desc,horario_registro.desc&limit=100`;
+  return await supabaseFetch(endpoint);
+}
+
+/** Carrega todas as leituras de hoje para todas as cidades em paralelo */
+async function carregarTodasLeituras() {
+  const promises = CIDADES.map(async (c) => {
+    const leituras = await carregarLeituras(c.nome);
+    return { cidade: c.nome, leituras };
+  });
+  const resultados = await Promise.all(promises);
+  resultados.forEach(r => {
+    if (!dadosCidades[r.cidade]) dadosCidades[r.cidade] = {};
+    dadosCidades[r.cidade].leituras = r.leituras;
+  });
+}
+
+/** Carrega tudo e atualiza a interface */
+async function carregarTudo() {
+  console.log('Carregando dados...');
+  const inicio = Date.now();
+
+  // Carregar leituras e apostas em paralelo
+  await Promise.all([
+    carregarTodasLeituras(),
+    carregarApostas().then(a => { dadosApostas = a; })
+  ]);
+
+  const duracao = ((Date.now() - inicio) / 1000).toFixed(1);
+  console.log(`Dados carregados em ${duracao}s`);
+
+  // Atualizar header
+  const agora = new Date();
+  const horaStr = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('header-data').textContent = `${dataHojeUTC()} ${horaStr}`;
+  document.getElementById('footer-update').textContent = `Atualizado: ${horaStr}`;
+
+  // Renderizar
+  renderizarGrid();
+  renderizarApostas();
+
+  // Se tem cidade selecionada, recarregar detalhe
+  if (cidadeSelecionada) {
+    await abrirDetalhe(cidadeSelecionada);
+  }
+}
+
+// ==============================================================
+// ANALISE DE TEMPERATURA — STATUS DA CIDADE
+// ==============================================================
+
+/**
+ * Analisa as leituras e retorna:
+ * - tempAtual, tempMax, horaMax, tendencia, status
+ */
+function analisarLeituras(leituras, fusoOffset) {
+  if (!leituras || leituras.length === 0) {
+    return { tempAtual: null, tempMax: null, horaMax: null, tendencia: 0, status: 'sem-dados' };
+  }
+
+  // Encontrar temperatura maxima (pico)
+  let maxTemp = -999;
+  let maxHora = '';
+  leituras.forEach(l => {
+    const t = parseFloat(l.temperatura);
+    if (t > maxTemp) {
+      maxTemp = t;
+      maxHora = l.hora_local || l.hora_utc || '';
+    }
+  });
+
+  // Temperatura atual (ultima leitura)
+  const ultima = leituras[leituras.length - 1];
+  const tempAtual = parseFloat(ultima.temperatura);
+
+  // Tendencia: comparar ultimas 3 leituras
+  let tendencia = 0;
+  if (leituras.length >= 2) {
+    const penultima = parseFloat(leituras[leituras.length - 2].temperatura);
+    tendencia = tempAtual - penultima;
+  }
+
+  // Hora local atual da cidade
+  const agoraUTC = new Date();
+  const horaLocalCidade = agoraUTC.getUTCHours() + fusoOffset;
+  const horaLocal = ((horaLocalCidade % 24) + 24) % 24;
+
+  // Determinar status
+  let status = 'subindo';
+  if (tempAtual >= maxTemp && tendencia <= 0) {
+    status = 'pico-ating';  // Pico atingido
+  } else if (tempAtual >= maxTemp - 1 && horaLocal >= 12 && horaLocal <= 16) {
+    status = 'pico-prox';   // Perto do pico
+  } else if (tendencia < -0.5) {
+    status = 'descendo';
+  } else {
+    status = 'subindo';
+  }
+
+  return {
+    tempAtual: tempAtual,
+    tempMax: maxTemp,
+    horaMax: formatarHora(maxHora),
+    tendencia: tendencia,
+    status: status,
+    totalLeituras: leituras.length
+  };
+}
+
+// ==============================================================
+// RENDERIZAR GRID DE CIDADES
+// ==============================================================
+
+function renderizarGrid() {
+  const container = document.getElementById('city-grid');
+  const regiao = document.getElementById('filtro-regiao').value;
+  const ordem = document.getElementById('filtro-ordem').value;
+
+  // Filtrar por regiao
+  let cidadesFiltradas = [...CIDADES];
+  if (regiao !== 'todas') {
+    cidadesFiltradas = cidadesFiltradas.filter(c => c.regiao === regiao);
+  }
+
+  // Preparar dados para ordenacao
+  const cidadesComDados = cidadesFiltradas.map(c => {
+    const dados = dadosCidades[c.nome];
+    const leituras = dados ? dados.leituras : [];
+    const analise = analisarLeituras(leituras, c.fuso_offset);
+    return { ...c, analise };
+  });
+
+  // Ordenar
+  switch (ordem) {
+    case 'temp-desc':
+      cidadesComDados.sort((a, b) => (b.analise.tempAtual || -999) - (a.analise.tempAtual || -999));
+      break;
+    case 'temp-asc':
+      cidadesComDados.sort((a, b) => (a.analise.tempAtual || 999) - (b.analise.tempAtual || 999));
+      break;
+    case 'fuso':
+      cidadesComDados.sort((a, b) => b.fuso_offset - a.fuso_offset);
+      break;
+    default:
+      cidadesComDados.sort((a, b) => a.nome.localeCompare(b.nome));
+  }
+
+  // Atualizar contagem no header
+  document.getElementById('header-cidades-count').textContent = `${cidadesComDados.length} cidades`;
+
+  // Renderizar cards
+  if (cidadesComDados.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128270;</div>Nenhuma cidade encontrada para esse filtro.</div>';
+    return;
+  }
+
+  let html = '';
+  cidadesComDados.forEach(c => {
+    const a = c.analise;
+    const tempStr = a.tempAtual !== null ? `${a.tempAtual.toFixed(0)}` : '—';
+    const unidade = `°${c.unidade}`;
+
+    // Seta de tendencia
+    let seta = '';
+    let corSeta = '';
+    if (a.tendencia > 0.3) { seta = '&#8593;'; corSeta = 'var(--green)'; }
+    else if (a.tendencia < -0.3) { seta = '&#8595;'; corSeta = 'var(--red)'; }
+    else { seta = '&#8594;'; corSeta = 'var(--gold)'; }
+
+    // Status badge
+    const statusMap = {
+      'subindo':    { classe: 'status-subindo',   texto: 'Subindo' },
+      'pico-prox':  { classe: 'status-pico-prox', texto: 'Perto do pico' },
+      'pico-ating': { classe: 'status-pico-ating', texto: 'Pico atingido' },
+      'descendo':   { classe: 'status-descendo',  texto: 'Descendo' },
+      'sem-dados':  { classe: 'status-descendo',  texto: 'Sem dados' }
+    };
+    const st = statusMap[a.status] || statusMap['sem-dados'];
+
+    html += `
+      <div class="card city-card" onclick="abrirDetalhe('${c.nome}')">
+        <div class="city-name">${c.nome} (${unidade})</div>
+        <div class="city-temp">
+          ${tempStr}${a.tempAtual !== null ? unidade : ''}
+          <span class="city-arrow" style="color:${corSeta}">${seta}</span>
+        </div>
+        <span class="status-badge ${st.classe}">${st.texto}</span>
+        <div class="city-meta">
+          Pico: <strong>${a.tempMax !== null ? a.tempMax.toFixed(1) + unidade : '—'}</strong>
+          ${a.horaMax ? ' as ' + a.horaMax : ''}
+        </div>
+        <div class="city-meta">Leituras: <strong>${a.totalLeituras || 0}</strong></div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// ==============================================================
+// DETALHE DA CIDADE
+// ==============================================================
+
+async function abrirDetalhe(nomeCidade) {
+  cidadeSelecionada = nomeCidade;
+  const cidadeConfig = CIDADES.find(c => c.nome === nomeCidade);
+  if (!cidadeConfig) return;
+
+  // Mostrar secao detalhe, esconder grid
+  document.getElementById('secao-cidades').style.display = 'none';
+  document.getElementById('secao-detalhe').classList.add('active');
+  document.getElementById('detalhe-titulo').innerHTML = `${nomeCidade} <span>(°${cidadeConfig.unidade})</span>`;
+
+  // Carregar odds em paralelo
+  const oddsPromise = carregarOdds(nomeCidade);
+
+  // Renderizar grafico com leituras existentes
+  const dados = dadosCidades[nomeCidade];
+  const leituras = dados ? dados.leituras : [];
+  renderizarGrafico(leituras, cidadeConfig);
+
+  // Renderizar odds quando chegarem
+  const odds = await oddsPromise;
+  renderizarOdds(odds);
+}
+
+function voltarParaGrid() {
+  cidadeSelecionada = null;
+  document.getElementById('secao-cidades').style.display = '';
+  document.getElementById('secao-detalhe').classList.remove('active');
+
+  // Destruir grafico para liberar memoria
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+}
+
+// ==============================================================
+// GRAFICO DE TEMPERATURA (Chart.js)
+// ==============================================================
+
+function renderizarGrafico(leituras, cidadeConfig) {
+  const canvas = document.getElementById('temp-chart');
+  const ctx = canvas.getContext('2d');
+
+  // Destruir grafico anterior
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+
+  if (!leituras || leituras.length === 0) {
+    document.getElementById('chart-info').innerHTML =
+      '<div class="empty-state"><div class="icon">&#128200;</div>Sem leituras para hoje.</div>';
+    return;
+  }
+
+  // Preparar dados
+  const labels = leituras.map(l => formatarHora(l.hora_local || l.hora_utc));
+  const temps = leituras.map(l => parseFloat(l.temperatura));
+
+  // Encontrar indice do pico
+  let picoIdx = 0;
+  let picoVal = -999;
+  temps.forEach((t, i) => { if (t > picoVal) { picoVal = t; picoIdx = i; } });
+
+  // Cores dos pontos: pico = verde, ultimo = dourado claro, resto = dourado
+  const pontoCores = temps.map((_, i) => {
+    if (i === picoIdx) return '#22c55e';
+    if (i === temps.length - 1) return '#f0c040';
+    return '#d4a017';
+  });
+  const pontoRaios = temps.map((_, i) => {
+    if (i === picoIdx) return 6;
+    if (i === temps.length - 1) return 5;
+    return 0;  // esconder pontos intermediarios
+  });
+  const pontoHoverRaios = temps.map(() => 5);
+
+  // Gradiente de area
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(212, 160, 23, 0.3)');
+  gradient.addColorStop(1, 'rgba(212, 160, 23, 0.0)');
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: `Temperatura (°${cidadeConfig.unidade})`,
+        data: temps,
+        borderColor: '#d4a017',
+        borderWidth: 2.5,
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: pontoCores,
+        pointBorderColor: pontoCores,
+        pointRadius: pontoRaios,
+        pointHoverRadius: pontoHoverRaios,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#e8edf5',
+          bodyColor: '#e8edf5',
+          borderColor: 'rgba(212,160,23,0.3)',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: function(ctx) {
+              let label = `${ctx.parsed.y.toFixed(1)}°${cidadeConfig.unidade}`;
+              if (ctx.dataIndex === picoIdx) label += ' (PICO)';
+              if (ctx.dataIndex === temps.length - 1) label += ' (AGORA)';
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8892a4', font: { size: 10 }, maxTicksLimit: 12 },
+          grid: { color: 'rgba(136,146,164,0.06)' }
+        },
+        y: {
+          ticks: { color: '#8892a4', font: { size: 10 },
+            callback: v => `${v}°`
+          },
+          grid: { color: 'rgba(136,146,164,0.06)' }
+        }
+      },
+      interaction: { intersect: false, mode: 'index' }
+    }
+  });
+
+  // Info abaixo do grafico
+  const tempAtual = temps[temps.length - 1];
+  const tempMin = Math.min(...temps);
+  document.getElementById('chart-info').innerHTML = `
+    <div class="chart-info-item">
+      <span class="label">Atual: </span>
+      <span class="val gold">${tempAtual.toFixed(1)}°${cidadeConfig.unidade}</span>
+    </div>
+    <div class="chart-info-item">
+      <span class="label">Pico: </span>
+      <span class="val green">${picoVal.toFixed(1)}°${cidadeConfig.unidade}</span>
+      <span class="sec"> as ${labels[picoIdx]}</span>
+    </div>
+    <div class="chart-info-item">
+      <span class="label">Min: </span>
+      <span class="val">${tempMin.toFixed(1)}°${cidadeConfig.unidade}</span>
+    </div>
+    <div class="chart-info-item">
+      <span class="label">Leituras: </span>
+      <span class="val">${leituras.length}</span>
+    </div>
+  `;
+}
+
+// ==============================================================
+// ODDS POLYMARKET
+// ==============================================================
+
+function renderizarOdds(odds) {
+  const container = document.getElementById('odds-list');
+
+  if (!odds || odds.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128202;</div>Sem odds disponiveis para hoje.</div>';
+    return;
+  }
+
+  // Pegar somente as odds mais recentes (mesmo coletado_em)
+  // Como ja vem ordenado por coletado_em.desc, pegar o primeiro timestamp
+  const primeiroTimestamp = odds[0].coletado_em;
+  const oddsRecentes = odds.filter(o => o.coletado_em === primeiroTimestamp);
+
+  // Encontrar a faixa com maior preco (mais provavel)
+  let maxPreco = 0;
+  let faixaMax = '';
+  oddsRecentes.forEach(o => {
+    const preco = parseFloat(o.preco_compra) || 0;
+    if (preco > maxPreco) { maxPreco = preco; faixaMax = o.faixa; }
+  });
+
+  let html = '';
+  oddsRecentes.forEach(o => {
+    const preco = parseFloat(o.preco_compra) || 0;
+    const precoPercent = (preco * 100).toFixed(0);
+    const larguraBarra = Math.max(precoPercent, 2);
+    const isDestaque = o.faixa === faixaMax;
+
+    html += `
+      <div class="odd-row ${isDestaque ? 'highlighted' : ''}">
+        <div class="odd-label">
+          <span class="range">${o.faixa} ${isDestaque ? '&#11088;' : ''}</span>
+          <span class="price ${isDestaque ? 'gold' : ''}">${precoPercent}&#162;</span>
+        </div>
+        <div class="odd-bar-track">
+          <div class="odd-bar-fill" style="width: ${larguraBarra}%"></div>
+        </div>
+      </div>
+    `;
+  });
+
+  // Info do volume
+  const volumeTotal = oddsRecentes.reduce((s, o) => s + (parseFloat(o.volume) || 0), 0);
+  if (volumeTotal > 0) {
+    html += `<div style="font-size:11px; color:var(--text-sec); margin-top:10px;">Volume total: $${volumeTotal.toLocaleString('en-US')}</div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ==============================================================
+// APOSTAS — TABELA + METRICAS
+// ==============================================================
+
+function renderizarApostas() {
+  const tbody = document.getElementById('apostas-body');
+
+  if (!dadosApostas || dadosApostas.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="icon">&#128203;</div>Nenhuma aposta registrada.</td></tr>';
+    atualizarMetricas([]);
+    return;
+  }
+
+  let html = '';
+  dadosApostas.forEach(a => {
+    const pnl = parseFloat(a.pnl) || 0;
+    const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
+    const pnlClass = pnl > 0 ? 'green' : (pnl < 0 ? 'red' : 'sec');
+
+    const tipoBadge = a.tipo === 'YES'
+      ? '<span class="badge-yes">YES</span>'
+      : '<span class="badge-no">NO</span>';
+
+    let resultadoHtml = '';
+    if (a.resultado === 'win' || a.resultado === 'ganhou') {
+      resultadoHtml = '<span class="green">&#10003; Win</span>';
+    } else if (a.resultado === 'lose' || a.resultado === 'perdeu') {
+      resultadoHtml = '<span class="red">&#10007; Lose</span>';
+    } else if (a.resultado === 'pendente' || !a.resultado) {
+      resultadoHtml = '<span class="sec">&#9679; Pendente</span>';
+    } else {
+      resultadoHtml = `<span class="sec">${a.resultado}</span>`;
+    }
+
+    const oddStr = a.odd ? `${(parseFloat(a.odd) * 100).toFixed(0)}&#162;` : '—';
+    const valorStr = a.valor ? `$${parseFloat(a.valor).toFixed(2)}` : '—';
+
+    html += `
+      <tr>
+        <td>${a.data_alvo || '—'}</td>
+        <td>${a.cidade || '—'}</td>
+        <td>${a.faixa || '—'}</td>
+        <td>${tipoBadge}</td>
+        <td>${oddStr}</td>
+        <td>${valorStr}</td>
+        <td>${resultadoHtml}</td>
+        <td class="${pnlClass}">${pnlStr}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+  atualizarMetricas(dadosApostas);
+}
+
+function atualizarMetricas(apostas) {
+  const total = apostas.length;
+
+  // Filtrar apostas com resultado definido (nao pendentes)
+  const comResultado = apostas.filter(a =>
+    a.resultado && a.resultado !== 'pendente'
+  );
+
+  const wins = comResultado.filter(a =>
+    a.resultado === 'win' || a.resultado === 'ganhou'
+  ).length;
+
+  const winRate = comResultado.length > 0 ? (wins / comResultado.length * 100) : 0;
+
+  const pnlTotal = apostas.reduce((s, a) => s + (parseFloat(a.pnl) || 0), 0);
+  const valorTotal = apostas.reduce((s, a) => s + (parseFloat(a.valor) || 0), 0);
+  const roi = valorTotal > 0 ? (pnlTotal / valorTotal * 100) : 0;
+
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-winrate').textContent = comResultado.length > 0 ? `${winRate.toFixed(1)}%` : '—';
+
+  const pnlEl = document.getElementById('m-pnl');
+  pnlEl.textContent = pnlTotal >= 0 ? `+$${pnlTotal.toFixed(2)}` : `-$${Math.abs(pnlTotal).toFixed(2)}`;
+  pnlEl.className = `metric-val ${pnlTotal >= 0 ? 'green' : 'red'}`;
+
+  const roiEl = document.getElementById('m-roi');
+  roiEl.textContent = valorTotal > 0 ? `${roi.toFixed(1)}%` : '—';
+  roiEl.className = `metric-val ${roi >= 0 ? 'green' : 'red'}`;
+}
+
+// ==============================================================
+// FILTROS — EVENT LISTENERS
+// ==============================================================
+
+document.getElementById('filtro-regiao').addEventListener('change', renderizarGrid);
+document.getElementById('filtro-ordem').addEventListener('change', renderizarGrid);
+
+// ==============================================================
+// INICIALIZACAO + AUTO-REFRESH
+// ==============================================================
+
+// Carregar tudo ao abrir a pagina
+carregarTudo();
+
+// Auto-refresh a cada 5 minutos (300000 ms)
+setInterval(carregarTudo, 300000);
+
+// Atualizar footer com hora de carregamento
+document.getElementById('footer-update').textContent = `Carregando...`;
+</script>
+
+</body>
+</html>
