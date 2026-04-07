@@ -8,3 +8,4 @@ python-dotenv>=1.0
 beautifulsoup4>=4.13
 pytest>=8.3
 pytest-asyncio>=0.25
+supabase>=2.0
