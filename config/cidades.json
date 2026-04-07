@@ -1,114 +1,38 @@
 {
     "cidades": [
-        {
-            "nome": "London",
-            "nome_polymarket": "London",
-            "latitude": 51.5074,
-            "longitude": -0.1278,
-            "fuso": "Europe/London",
-            "estacao_resolucao": "EGLC",
-            "regiao": "Europa",
-            "url_history_wu": "https://www.wunderground.com/history/daily/gb/london/EGLC/date/{data}"
-        },
-        {
-            "nome": "New York",
-            "nome_polymarket": "NYC",
-            "latitude": 40.7128,
-            "longitude": -74.0060,
-            "fuso": "America/New_York",
-            "estacao_resolucao": "LaGuardia",
-            "regiao": "America",
-            "url_history_wu": "https://www.wunderground.com/history/daily/us/new-york-city/KLGA/date/{data}"
-        },
-        {
-            "nome": "Hong Kong",
-            "nome_polymarket": "Hong Kong",
-            "latitude": 22.3193,
-            "longitude": 114.1694,
-            "fuso": "Asia/Hong_Kong",
-            "estacao_resolucao": "VHHH",
-            "regiao": "Asia",
-            "url_history_wu": "https://www.wunderground.com/history/daily/hk/hong-kong/VHHH/date/{data}"
-        },
-        {
-            "nome": "Istanbul",
-            "nome_polymarket": "Istanbul",
-            "latitude": 41.0082,
-            "longitude": 28.9784,
-            "fuso": "Europe/Istanbul",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "Europa",
-            "url_history_wu": "https://www.wunderground.com/history/daily/tr/istanbul/LTFM/date/{data}"
-        },
-        {
-            "nome": "Moscow",
-            "nome_polymarket": "Moscow",
-            "latitude": 55.7558,
-            "longitude": 37.6173,
-            "fuso": "Europe/Moscow",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "Europa",
-            "url_history_wu": "https://www.wunderground.com/history/daily/ru/moscow/UUEE/date/{data}"
-        },
-        {
-            "nome": "Paris",
-            "nome_polymarket": "Paris",
-            "latitude": 48.8566,
-            "longitude": 2.3522,
-            "fuso": "Europe/Paris",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "Europa",
-            "url_history_wu": "https://www.wunderground.com/history/daily/fr/paris/LFPG/date/{data}"
-        },
-        {
-            "nome": "Seoul",
-            "nome_polymarket": "Seoul",
-            "latitude": 37.5665,
-            "longitude": 126.9780,
-            "fuso": "Asia/Seoul",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "Asia",
-            "url_history_wu": "https://www.wunderground.com/history/daily/kr/seoul/RKSS/date/{data}"
-        },
-        {
-            "nome": "Tokyo",
-            "nome_polymarket": "Tokyo",
-            "latitude": 35.6762,
-            "longitude": 139.6503,
-            "fuso": "Asia/Tokyo",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "Asia",
-            "url_history_wu": "https://www.wunderground.com/history/daily/jp/tokyo/RJTT/date/{data}"
-        },
-        {
-            "nome": "Chicago",
-            "nome_polymarket": "Chicago",
-            "latitude": 41.8781,
-            "longitude": -87.6298,
-            "fuso": "America/Chicago",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "America",
-            "url_history_wu": "https://www.wunderground.com/history/daily/us/chicago/KORD/date/{data}"
-        },
-        {
-            "nome": "Madrid",
-            "nome_polymarket": "Madrid",
-            "latitude": 40.4168,
-            "longitude": -3.7038,
-            "fuso": "Europe/Madrid",
-            "estacao_resolucao": "a_mapear",
-            "regiao": "Europa",
-            "url_history_wu": "https://www.wunderground.com/history/daily/es/madrid/LEMD/date/{data}"
-        },
-        {
-            "nome": "Milan",
-            "nome_polymarket": "Milan",
-            "latitude": 45.4642,
-            "longitude": 9.1900,
-            "fuso": "Europe/Rome",
-            "estacao_resolucao": "LIMC",
-            "regiao": "Europa",
-            "url_history_wu": "https://www.wunderground.com/history/daily/it/milan/LIMC/date/{data}"
-        }
+        {"nome": "Wellington", "slug_poly": "wellington", "estacao_wu": "NZWN:9:NZ", "url_history": "https://www.wunderground.com/history/daily/nz/wellington/NZWN/date/{data}", "unidade": "C", "fuso": "Pacific/Auckland", "fuso_offset": 12, "regiao": "Oceania"},
+        {"nome": "Seoul", "slug_poly": "seoul", "estacao_wu": "RKSS:9:KR", "url_history": "https://www.wunderground.com/history/daily/kr/seoul/RKSS/date/{data}", "unidade": "C", "fuso": "Asia/Seoul", "fuso_offset": 9, "regiao": "Asia"},
+        {"nome": "Tokyo", "slug_poly": "tokyo", "estacao_wu": "RJTT:9:JP", "url_history": "https://www.wunderground.com/history/daily/jp/tokyo/RJTT/date/{data}", "unidade": "C", "fuso": "Asia/Tokyo", "fuso_offset": 9, "regiao": "Asia"},
+        {"nome": "Busan", "slug_poly": "busan", "estacao_wu": "RKPK:9:KR", "url_history": "https://www.wunderground.com/history/daily/kr/busan/RKPK/date/{data}", "unidade": "C", "fuso": "Asia/Seoul", "fuso_offset": 9, "regiao": "Asia"},
+        {"nome": "Shanghai", "slug_poly": "shanghai", "estacao_wu": "ZSPD:9:CN", "url_history": "https://www.wunderground.com/history/daily/cn/shanghai/ZSPD/date/{data}", "unidade": "C", "fuso": "Asia/Shanghai", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Hong Kong", "slug_poly": "hong-kong", "estacao_wu": "VHHH:9:HK", "url_history": "https://www.wunderground.com/history/daily/hk/hong-kong/VHHH/date/{data}", "unidade": "C", "fuso": "Asia/Hong_Kong", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Beijing", "slug_poly": "beijing", "estacao_wu": "ZBAA:9:CN", "url_history": "https://www.wunderground.com/history/daily/cn/beijing/ZBAA/date/{data}", "unidade": "C", "fuso": "Asia/Shanghai", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Chongqing", "slug_poly": "chongqing", "estacao_wu": "ZUCK:9:CN", "url_history": "https://www.wunderground.com/history/daily/cn/chongqing/ZUCK/date/{data}", "unidade": "C", "fuso": "Asia/Shanghai", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Taipei", "slug_poly": "taipei", "estacao_wu": "RCTP:9:TW", "url_history": "https://www.wunderground.com/history/daily/tw/taipei/RCTP/date/{data}", "unidade": "C", "fuso": "Asia/Taipei", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Singapore", "slug_poly": "singapore", "estacao_wu": "WSSS:9:SG", "url_history": "https://www.wunderground.com/history/daily/sg/singapore/WSSS/date/{data}", "unidade": "C", "fuso": "Asia/Singapore", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Kuala Lumpur", "slug_poly": "kuala-lumpur", "estacao_wu": "WMKK:9:MY", "url_history": "https://www.wunderground.com/history/daily/my/kuala-lumpur/WMKK/date/{data}", "unidade": "C", "fuso": "Asia/Kuala_Lumpur", "fuso_offset": 8, "regiao": "Asia"},
+        {"nome": "Jakarta", "slug_poly": "jakarta", "estacao_wu": "WIII:9:ID", "url_history": "https://www.wunderground.com/history/daily/id/jakarta/WIII/date/{data}", "unidade": "C", "fuso": "Asia/Jakarta", "fuso_offset": 7, "regiao": "Asia"},
+        {"nome": "Lucknow", "slug_poly": "lucknow", "estacao_wu": "VILK:9:IN", "url_history": "https://www.wunderground.com/history/daily/in/lucknow/VILK/date/{data}", "unidade": "C", "fuso": "Asia/Kolkata", "fuso_offset": 5.5, "regiao": "Asia"},
+        {"nome": "Moscow", "slug_poly": "moscow", "estacao_wu": "UUWW:9:RU", "url_history": "https://www.wunderground.com/history/daily/ru/moscow/UUWW/date/{data}", "unidade": "C", "fuso": "Europe/Moscow", "fuso_offset": 3, "regiao": "Europa"},
+        {"nome": "Ankara", "slug_poly": "ankara", "estacao_wu": "LTAC:9:TR", "url_history": "https://www.wunderground.com/history/daily/tr/ankara/LTAC/date/{data}", "unidade": "C", "fuso": "Europe/Istanbul", "fuso_offset": 3, "regiao": "Europa"},
+        {"nome": "Istanbul", "slug_poly": "istanbul", "estacao_wu": "LTFM:9:TR", "url_history": "https://www.wunderground.com/history/daily/tr/istanbul/LTFM/date/{data}", "unidade": "C", "fuso": "Europe/Istanbul", "fuso_offset": 3, "regiao": "Europa"},
+        {"nome": "Tel Aviv", "slug_poly": "tel-aviv", "estacao_wu": "LLBG:9:IL", "url_history": "https://www.wunderground.com/history/daily/il/tel-aviv/LLBG/date/{data}", "unidade": "C", "fuso": "Asia/Jerusalem", "fuso_offset": 3, "regiao": "Europa"},
+        {"nome": "Helsinki", "slug_poly": "helsinki", "estacao_wu": "EFHK:9:FI", "url_history": "https://www.wunderground.com/history/daily/fi/helsinki/EFHK/date/{data}", "unidade": "C", "fuso": "Europe/Helsinki", "fuso_offset": 3, "regiao": "Europa"},
+        {"nome": "Warsaw", "slug_poly": "warsaw", "estacao_wu": "EPWA:9:PL", "url_history": "https://www.wunderground.com/history/daily/pl/warsaw/EPWA/date/{data}", "unidade": "C", "fuso": "Europe/Warsaw", "fuso_offset": 2, "regiao": "Europa"},
+        {"nome": "Paris", "slug_poly": "paris", "estacao_wu": "LFPG:9:FR", "url_history": "https://www.wunderground.com/history/daily/fr/paris/LFPG/date/{data}", "unidade": "C", "fuso": "Europe/Paris", "fuso_offset": 2, "regiao": "Europa"},
+        {"nome": "Amsterdam", "slug_poly": "amsterdam", "estacao_wu": "EHAM:9:NL", "url_history": "https://www.wunderground.com/history/daily/nl/amsterdam/EHAM/date/{data}", "unidade": "C", "fuso": "Europe/Amsterdam", "fuso_offset": 2, "regiao": "Europa"},
+        {"nome": "Madrid", "slug_poly": "madrid", "estacao_wu": "LEMD:9:ES", "url_history": "https://www.wunderground.com/history/daily/es/madrid/LEMD/date/{data}", "unidade": "C", "fuso": "Europe/Madrid", "fuso_offset": 2, "regiao": "Europa"},
+        {"nome": "Milan", "slug_poly": "milan", "estacao_wu": "LIMC:9:IT", "url_history": "https://www.wunderground.com/history/daily/it/milan/LIMC/date/{data}", "unidade": "C", "fuso": "Europe/Rome", "fuso_offset": 2, "regiao": "Europa"},
+        {"nome": "London", "slug_poly": "london", "estacao_wu": "EGLC:9:GB", "url_history": "https://www.wunderground.com/history/daily/gb/london/EGLC/date/{data}", "unidade": "C", "fuso": "Europe/London", "fuso_offset": 1, "regiao": "Europa"},
+        {"nome": "Sao Paulo", "slug_poly": "sao-paulo", "estacao_wu": "SBGR:9:BR", "url_history": "https://www.wunderground.com/history/daily/br/sao-paulo/SBGR/date/{data}", "unidade": "C", "fuso": "America/Sao_Paulo", "fuso_offset": -3, "regiao": "Americas"},
+        {"nome": "Buenos Aires", "slug_poly": "buenos-aires", "estacao_wu": "SAEZ:9:AR", "url_history": "https://www.wunderground.com/history/daily/ar/ezeiza/SAEZ/date/{data}", "unidade": "C", "fuso": "America/Argentina/Buenos_Aires", "fuso_offset": -3, "regiao": "Americas"},
+        {"nome": "Toronto", "slug_poly": "toronto", "estacao_wu": "CYYZ:9:CA", "url_history": "https://www.wunderground.com/history/daily/ca/toronto/CYYZ/date/{data}", "unidade": "C", "fuso": "America/Toronto", "fuso_offset": -4, "regiao": "Americas"},
+        {"nome": "NYC", "slug_poly": "nyc", "estacao_wu": "KLGA:9:US", "url_history": "https://www.wunderground.com/history/daily/us/new-york-city/KLGA/date/{data}", "unidade": "F", "fuso": "America/New_York", "fuso_offset": -4, "regiao": "Americas"},
+        {"nome": "Panama", "slug_poly": "panama-city", "estacao_wu": "MPTO:9:PA", "url_history": "https://www.wunderground.com/history/daily/pa/panama/MPTO/date/{data}", "unidade": "C", "fuso": "America/Panama", "fuso_offset": -5, "regiao": "Americas"},
+        {"nome": "Chicago", "slug_poly": "chicago", "estacao_wu": "KORD:9:US", "url_history": "https://www.wunderground.com/history/daily/us/chicago/KORD/date/{data}", "unidade": "F", "fuso": "America/Chicago", "fuso_offset": -5, "regiao": "Americas"},
+        {"nome": "Mexico City", "slug_poly": "mexico-city", "estacao_wu": "MMMX:9:MX", "url_history": "https://www.wunderground.com/history/daily/mx/mexico-city/MMMX/date/{data}", "unidade": "C", "fuso": "America/Mexico_City", "fuso_offset": -6, "regiao": "Americas"},
+        {"nome": "Denver", "slug_poly": "denver", "estacao_wu": "KDEN:9:US", "url_history": "https://www.wunderground.com/history/daily/us/denver/KDEN/date/{data}", "unidade": "F", "fuso": "America/Denver", "fuso_offset": -6, "regiao": "Americas"},
+        {"nome": "Miami", "slug_poly": "miami", "estacao_wu": "KMIA:9:US", "url_history": "https://www.wunderground.com/history/daily/us/fl/miami/KMIA/date/{data}", "unidade": "F", "fuso": "America/New_York", "fuso_offset": -4, "regiao": "Americas"},
+        {"nome": "Seattle", "slug_poly": "seattle", "estacao_wu": "KSEA:9:US", "url_history": "https://www.wunderground.com/history/daily/us/seattle/KSEA/date/{data}", "unidade": "F", "fuso": "America/Los_Angeles", "fuso_offset": -7, "regiao": "Americas"}
     ]
 }

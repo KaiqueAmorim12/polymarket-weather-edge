@@ -93,13 +93,26 @@ class PolymarketConector:
     def _extrair_faixa_da_pergunta(self, pergunta: str) -> Optional[Any]:
         """Extrai faixa de temperatura de uma pergunta de contrato.
 
-        Lida com diferentes encodings do simbolo de grau (°, \u00b0, etc.)
+        Lida com:
+        - "20°C", "20°C or higher", "16°C or below"
+        - "between 68-69°F" (faixas de range, ex: Miami)
+        - Diferentes encodings do simbolo de grau
         """
         import re
-        # Normalizar: substituir variantes do simbolo de grau
         pergunta_norm = pergunta.replace("\u00b0", "°").replace("&#176;", "°")
 
-        # Padrao completo: "20°C or higher", "16°C or below", "20°C"
+        # Padrao 1: "between X-Y°F" (faixas de range)
+        match_range = re.search(
+            r"between\s+(\d+)\s*-\s*(\d+)\s*°\s*([CF])",
+            pergunta_norm,
+            re.IGNORECASE,
+        )
+        if match_range:
+            return parsear_faixa_temperatura(
+                f"between {match_range.group(1)}-{match_range.group(2)}°{match_range.group(3)}"
+            )
+
+        # Padrao 2: "20°C or higher", "16°C or below", "20°C"
         match = re.search(
             r"(\d+)\s*°\s*([CF])\s*(or\s+(?:higher|lower|above|below)|ou\s+(?:mais|menos))?",
             pergunta_norm,
@@ -114,7 +127,7 @@ class PolymarketConector:
                 texto += f" {modificador}"
             return parsear_faixa_temperatura(texto)
 
-        # Fallback: qualquer numero seguido de C ou F na pergunta
+        # Fallback: qualquer numero seguido de C ou F
         match = re.search(r"(\d+)\s*[°º]\s*([CF])", pergunta_norm, re.IGNORECASE)
         if match:
             return parsear_faixa_temperatura(f"{match.group(1)}°{match.group(2)}")
