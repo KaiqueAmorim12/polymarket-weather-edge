@@ -99,6 +99,16 @@
             "estacao_resolucao": "a_mapear",
             "regiao": "Europa",
             "url_history_wu": "https://www.wunderground.com/history/daily/es/madrid/LEMD/date/{data}"
+        },
+        {
+            "nome": "Milan",
+            "nome_polymarket": "Milan",
+            "latitude": 45.4642,
+            "longitude": 9.1900,
+            "fuso": "Europe/Rome",
+            "estacao_resolucao": "LIMC",
+            "regiao": "Europa",
+            "url_history_wu": "https://www.wunderground.com/history/daily/it/milan/LIMC/date/{data}"
         }
     ]
 }
