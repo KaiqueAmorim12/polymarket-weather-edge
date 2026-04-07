@@ -1,10 +1,9 @@
-name: WeatherEdge - Coleta Diaria
+name: WeatherEdge - Coleta
 
 on:
   schedule:
-    # 21:00 UTC = 18:00 BRT
-    - cron: '0 21 * * *'
-  workflow_dispatch:  # permite rodar manualmente pelo GitHub
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -26,22 +25,16 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Criar .env com secrets
-        run: |
-          echo "OPENWEATHERMAP_API_KEY=${{ secrets.OPENWEATHERMAP_API_KEY }}" >> .env
-          echo "ACCUWEATHER_API_KEY=${{ secrets.ACCUWEATHER_API_KEY }}" >> .env
-          echo "VISUAL_CROSSING_API_KEY=${{ secrets.VISUAL_CROSSING_API_KEY }}" >> .env
-
       - name: Rodar ciclo de coleta
         run: python agendar.py --agora
 
-      - name: Exportar resultados pra JSON
+      - name: Exportar resultados
         run: python exportar_json.py
 
-      - name: Commit e push dos resultados
+      - name: Commit e push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add resultados/ dados/
-          git diff --staged --quiet || git commit -m "dados: coleta diaria $(date -u +%Y-%m-%d)"
+          git diff --staged --quiet || git commit -m "dados: coleta $(date -u +%Y-%m-%d_%H%M)"
           git push
