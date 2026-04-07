@@ -109,3 +109,53 @@ class TestOpenMeteoColetor:
         assert prev_ecmwf[0].temperatura_max == 20.1
         assert prev_gfs[0].fonte == "gfs"
         assert prev_gfs[0].temperatura_max == 19.2
+
+
+from coletores.openweathermap import OpenWeatherMapColetor
+from coletores.visual_crossing import VisualCrossingColetor
+
+
+class TestOpenWeatherMapColetor:
+    def test_parsear_resposta(self) -> None:
+        resposta_mock = {
+            "list": [
+                {
+                    "dt": 1743984000,
+                    "main": {"temp_max": 20.5, "temp_min": 9.2},
+                },
+                {
+                    "dt": 1743994800,
+                    "main": {"temp_max": 21.0, "temp_min": 10.0},
+                },
+                {
+                    "dt": 1744070400,
+                    "main": {"temp_max": 22.0, "temp_min": 11.0},
+                },
+            ]
+        }
+
+        coletor = OpenWeatherMapColetor(api_key="teste")
+        previsao = coletor._parsear_resposta(resposta_mock, "2025-04-07")
+        assert previsao is not None
+        assert previsao.fonte == "openweathermap"
+        assert previsao.temperatura_max == 21.0
+        assert previsao.temperatura_min == 9.2
+
+
+class TestVisualCrossingColetor:
+    def test_parsear_resposta(self) -> None:
+        resposta_mock = {
+            "days": [
+                {
+                    "datetime": "2026-04-07",
+                    "tempmax": 19.8,
+                    "tempmin": 8.3,
+                }
+            ]
+        }
+
+        coletor = VisualCrossingColetor(api_key="teste")
+        previsao = coletor._parsear_resposta(resposta_mock, "2026-04-07")
+        assert previsao is not None
+        assert previsao.fonte == "visual_crossing"
+        assert previsao.temperatura_max == 19.8
