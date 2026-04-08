@@ -465,6 +465,37 @@
       white-space: nowrap; pointer-events: none;
       border: 1px solid var(--border); z-index: 999;
     }
+
+    /* ======================================================
+       HISTORICO DE PREVISOES
+    ====================================================== */
+    .hist-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .hist-table th {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-sec); padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .hist-table td {
+      padding: 9px 12px; font-size: 13px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .hist-table tr:last-child td { border-bottom: none; }
+    /* linhas alternadas */
+    .hist-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+    .hist-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+    .diff-zero    { color: var(--gold); font-weight: 700; }
+    .diff-ok      { color: var(--green); font-weight: 700; }
+    .diff-ruim    { color: var(--red); font-weight: 700; }
+
+    .hist-resumo {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      padding: 14px 0 2px; font-size: 13px;
+    }
+    .hist-resumo-item .lbl { color: var(--text-sec); }
+    .hist-resumo-item .val { color: var(--text-main); font-weight: 700; margin-left: 4px; }
   </style>
 </head>
 <body>
@@ -552,6 +583,14 @@
         <div id="odds-list" class="odds-list">
           <div class="loading"><div class="spinner"></div> Carregando odds...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Historico de Previsoes -->
+    <div class="card detail-card" style="margin-top: 20px;" id="historico-previsoes-card">
+      <h3>&#128200; Historico de Previsoes (30 dias)</h3>
+      <div id="historico-previsoes-conteudo">
+        <div class="loading"><div class="spinner"></div> Carregando historico...</div>
       </div>
     </div>
   </section>
@@ -1136,6 +1175,9 @@ async function abrirDetalhe(nomeCidade) {
 
   // Renderizar odds
   renderizarOdds(odds);
+
+  // Renderizar historico de previsoes dos ultimos 30 dias
+  renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig);
 }
 
 function voltarParaGrid() {
@@ -1444,6 +1486,167 @@ function renderizarGrafico(leituras, cidadeConfig, picoMedio, previsao) {
       <span class="label">Leituras: </span>
       <span class="val">${leituras.length}</span>
     </div>
+  `;
+}
+
+// ==============================================================
+// HISTORICO DE PREVISOES — TABELA DE ACURACIA 30 DIAS
+// ==============================================================
+
+/**
+ * Busca previsoes dos ultimos 30 dias de uma cidade,
+ * cruza com as maximas reais (we_leituras) e renderiza
+ * a tabela de historico no card #historico-previsoes-conteudo.
+ */
+async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
+  const container = document.getElementById('historico-previsoes-conteudo');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando historico...</div>';
+
+  const unidade = cidadeConfig.unidade;
+
+  // 1. Buscar previsoes dos ultimos 30 dias, ordenadas da mais recente
+  const previsoes = await supabaseFetch(
+    `we_previsoes?cidade=eq.${encodeURIComponent(nomeCidade)}&order=data_alvo.desc&limit=30`
+  );
+
+  if (!previsoes || previsoes.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128200;</div>Nenhuma previsao encontrada nos ultimos 30 dias.</div>';
+    return;
+  }
+
+  // 2. Buscar todas as leituras do periodo de uma vez (otimizado)
+  const dataInicio = previsoes[previsoes.length - 1].data_alvo;
+  const todasLeituras = await supabaseFetch(
+    `we_leituras?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&select=data_alvo,temperatura`
+  );
+
+  // 3. Agrupar leituras por dia e pegar a maxima de cada um
+  const maximaPorDia = {};
+  if (todasLeituras && todasLeituras.length > 0) {
+    todasLeituras.forEach(l => {
+      const dia = l.data_alvo;
+      if (!dia) return;
+      const t = parseFloat(l.temperatura);
+      if (isNaN(t)) return;
+      if (maximaPorDia[dia] === undefined || t > maximaPorDia[dia]) {
+        maximaPorDia[dia] = t;
+      }
+    });
+  }
+
+  // 4. Calcular metricas gerais
+  let acertos = 0;
+  let totalComReal = 0;
+  let somaErros = 0;
+
+  // 5. Montar linhas da tabela
+  let linhasHtml = '';
+  previsoes.forEach(p => {
+    const dataAlvo = p.data_alvo || '—';
+    // Formatar data: YYYY-MM-DD → DD/MM
+    const dataFormatada = dataAlvo.length >= 10
+      ? `${dataAlvo.slice(8, 10)}/${dataAlvo.slice(5, 7)}`
+      : dataAlvo;
+
+    const prev = parseFloat(p.temp_max_prevista);
+    const prevStr = isNaN(prev) ? '—' : `${prev.toFixed(1)}°${unidade}`;
+
+    const maxReal = maximaPorDia[dataAlvo];
+    const realStr = maxReal !== undefined ? `${maxReal.toFixed(1)}°${unidade}` : '—';
+
+    // Diferenca: previsao - real (positivo = previu mais quente, negativo = previu mais frio)
+    let diffHtml = '—';
+    let acertouHtml = '—';
+    if (maxReal !== undefined && !isNaN(prev)) {
+      const diff = prev - maxReal;
+      const diffAbs = Math.abs(diff);
+      const diffSinal = diff > 0 ? '+' : '';
+      totalComReal++;
+      somaErros += diffAbs;
+
+      // Cor: verde se ±1°, vermelho se >2°, dourado se entre 1° e 2°
+      let diffClasse = 'diff-zero';
+      if (diffAbs <= 1) {
+        diffClasse = 'diff-ok';
+        acertos++;
+        acertouHtml = '&#9989;'; // ✅
+      } else if (diffAbs > 2) {
+        diffClasse = 'diff-ruim';
+        acertouHtml = '&#10060;'; // ❌
+      } else {
+        diffClasse = 'diff-zero'; // dourado para 1-2°
+        acertouHtml = '&#10060;'; // ❌
+      }
+
+      diffHtml = `<span class="${diffClasse}">${diffSinal}${diff.toFixed(1)}°</span>`;
+    }
+
+    // Hora de captura → converter para hora local da cidade
+    let capturaStr = '—';
+    if (p.hora_captura) {
+      // hora_captura e timestamp ISO, ex: "2026-04-05T23:05:00"
+      const horaUTCStr = p.hora_captura.slice(11, 16); // "HH:MM"
+      capturaStr = converterParaLocal(horaUTCStr, cidadeConfig.fuso_offset) + ' local';
+    }
+
+    linhasHtml += `
+      <tr>
+        <td>${dataFormatada}</td>
+        <td>${prevStr}</td>
+        <td>${realStr}</td>
+        <td>${diffHtml}</td>
+        <td style="text-align:center;">${acertouHtml}</td>
+        <td class="sec">${capturaStr}</td>
+      </tr>
+    `;
+  });
+
+  // 6. Calcular resumo
+  const acuraciaPct = totalComReal > 0 ? Math.round(acertos / totalComReal * 100) : null;
+  const erroMedio   = totalComReal > 0 ? (somaErros / totalComReal).toFixed(1) : null;
+
+  let resumoHtml = '';
+  if (totalComReal > 0) {
+    const acuraciaClass = acuraciaPct >= 70 ? 'green' : (acuraciaPct >= 50 ? 'gold' : 'red');
+    resumoHtml = `
+      <div class="hist-resumo">
+        <div class="hist-resumo-item">
+          <span class="lbl">Acuracia (&#177;1&#176;):</span>
+          <span class="val ${acuraciaClass}">${acuraciaPct}%</span>
+          <span class="sec" style="font-size:11px;"> (${acertos}/${totalComReal} dias)</span>
+        </div>
+        <div class="hist-resumo-item">
+          <span class="lbl">Erro medio:</span>
+          <span class="val">&#177;${erroMedio}&#176;${unidade}</span>
+        </div>
+        <div class="hist-resumo-item">
+          <span class="lbl">Dias analisados:</span>
+          <span class="val">${totalComReal}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // 7. Montar HTML final
+  container.innerHTML = `
+    <div class="table-wrapper">
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Previsao</th>
+            <th>Real (max)</th>
+            <th>Diferenca</th>
+            <th style="text-align:center;">Acertou (&#177;1&#176;)</th>
+            <th>Captura</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhasHtml}
+        </tbody>
+      </table>
+    </div>
+    ${resumoHtml}
   `;
 }
 
