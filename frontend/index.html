@@ -1247,12 +1247,14 @@ async function abrirDetalhe(nomeCidade) {
   // Renderizar odds
   renderizarOdds(odds);
 
-  // Buscar e renderizar previsoes dos 6 modelos
-  const modelosData = await supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=eq.${dataHoje}&order=modelo`);
-  renderizarModelos(modelosData, cidadeConfig);
+  // Buscar modelos do dia e historico em paralelo
+  const [modelosData, rankingInfo] = await Promise.all([
+    supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=eq.${dataHoje}&order=modelo`),
+    renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig),
+  ]);
 
-  // Renderizar historico de previsoes dos ultimos 30 dias
-  renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig);
+  // Renderizar card de modelos com ranking dinamico ja calculado
+  renderizarModelos(modelosData, cidadeConfig, rankingInfo);
 }
 
 function voltarParaGrid() {
@@ -1579,19 +1581,18 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
 
   const unidade = cidadeConfig.unidade;
   const cidade = cidadeConfig.nome;
-  const melhorModelo = MELHOR_MODELO[cidade] || 'ICON';
   const MODELOS = ['ICON', 'UKMO', 'ECMWF', 'GFS', 'GEM', 'JMA'];
 
-  // 1. Buscar previsoes dos ultimos 14 dias (tabela we_modelos)
-  const dataInicio = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  // 1. Buscar previsoes dos ultimos 30 dias (tabela we_modelos)
+  const dataInicio = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [modelosHist, leiturasHist] = await Promise.all([
     supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&order=data_alvo.desc,modelo`),
     supabaseFetch(`we_leituras?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&select=data_alvo,temperatura`)
   ]);
 
   if (!modelosHist || modelosHist.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">&#128200;</div>Nenhuma previsao de modelos encontrada nos ultimos 14 dias.</div>';
-    return;
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128200;</div>Nenhuma previsao de modelos encontrada nos ultimos 30 dias.</div>';
+    return null;
   }
 
   // 2. Agrupar previsoes por dia e modelo: { "2026-04-05": { ICON: 23, ECMWF: 22, ... } }
@@ -1684,41 +1685,48 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
     `;
   });
 
-  // 7. Cabecalhos dos modelos (destacar o melhor)
+  // 7. Calcular ranking dinamico com base nos dados coletados
+  const { ranking: rankingDinamico, top3 } = calcularRankingModelos(modelosHist, maximaPorDia, cidadeConfig);
+
+  // Cores dos top 3 (ouro, prata, bronze)
+  const coresMedalha = ['#d4a017', '#c0c0c0', '#cd7f32'];
+  const emojisPos = ['&#129351;', '&#129352;', '&#129353;']; // 🥇🥈🥉
+  const posPorModelo = {};
+  rankingDinamico.forEach((r, i) => { posPorModelo[r.modelo] = i; });
+
+  // 7. Cabecalhos dos modelos (destacar top 3 com cor de medalha)
   let thModelos = '';
   MODELOS.forEach(mod => {
-    const classe = mod === melhorModelo ? ' class="melhor-modelo"' : '';
-    thModelos += `<th${classe}>${mod}</th>`;
-  });
-
-  // 8. Resumo de acuracia
-  let melhorAcuraciaVal = -1;
-  let melhorAcuraciaMod = '';
-  MODELOS.forEach(mod => {
-    const { acertos, total } = acuraciaModelos[mod];
-    if (total > 0 && acertos / total > melhorAcuraciaVal) {
-      melhorAcuraciaVal = acertos / total;
-      melhorAcuraciaMod = mod;
+    const pos = posPorModelo[mod];
+    if (pos !== undefined && pos < 3) {
+      const cor = coresMedalha[pos];
+      const sufixo = pos === 0 ? ' (1o)' : pos === 1 ? ' (2o)' : ' (3o)';
+      thModelos += `<th style="color:${cor}; border-bottom: 2px solid ${cor};">${mod}${sufixo}</th>`;
+    } else {
+      thModelos += `<th>${mod}</th>`;
     }
   });
 
-  let itensAcuracia = '';
-  MODELOS.forEach(mod => {
-    const { acertos, total } = acuraciaModelos[mod];
-    if (total === 0) {
-      itensAcuracia += `<span class="item-modelo">${mod}: —</span>`;
-      return;
+  // 8. Resumo de acuracia com ranking visual (medalhas)
+  let itensTop = '';
+  let itensResto = '';
+  rankingDinamico.forEach((r, i) => {
+    const totalStr = r.total > 0 ? `${r.acertos}/${r.total}` : '—';
+    const pctStr = r.total > 0 ? `${r.pct}%` : '—';
+    if (i < 3) {
+      const cor = coresMedalha[i];
+      const emoji = emojisPos[i];
+      itensTop += `<span class="item-modelo" style="color:${cor};">${emoji} ${r.modelo}: ${pctStr} (${totalStr})</span>`;
+    } else {
+      itensResto += `<span class="item-modelo">${r.modelo}: ${pctStr} (${totalStr})</span>`;
     }
-    const pct = Math.round(acertos / total * 100);
-    const sufixo = mod === melhorAcuraciaMod ? ' &lt;&lt;&lt;melhor' : '';
-    const classe = mod === melhorAcuraciaMod ? 'item-modelo destaque' : 'item-modelo';
-    itensAcuracia += `<span class="${classe}">${mod}: ${acertos}/${total} (${pct}%)${sufixo}</span>`;
   });
 
   const resumoHtml = `
     <div class="modelos-hist-acuracia">
-      <div class="titulo">Acuracia (dias finalizados):</div>
-      <div class="linha-modelos">${itensAcuracia}</div>
+      <div class="titulo">Ranking (ultimos 30 dias):</div>
+      <div class="linha-modelos">${itensTop}</div>
+      ${itensResto ? `<div class="linha-modelos" style="margin-top:4px;">${itensResto}</div>` : ''}
     </div>
   `;
 
@@ -1741,58 +1749,93 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
     </div>
     ${resumoHtml}
   `;
+
+  // Retornar ranking para uso em renderizarModelos
+  return { ranking: rankingDinamico, top3 };
 }
 
 // ==============================================================
 // MODELOS METEOROLOGICOS
 // ==============================================================
 
-// Melhor modelo por cidade (baseado em teste de 7 dias)
-const MELHOR_MODELO = {
-  "Wellington": "UKMO", "Seoul": "GEM", "Tokyo": "ECMWF", "Busan": "UKMO",
-  "Shanghai": "ECMWF", "Hong Kong": "GFS", "Beijing": "UKMO", "Chongqing": "ECMWF",
-  "Taipei": "ICON", "Singapore": "UKMO", "Kuala Lumpur": "GFS", "Jakarta": "UKMO",
-  "Lucknow": "ECMWF", "Moscow": "ECMWF", "Ankara": "ICON", "Istanbul": "ICON",
-  "Tel Aviv": "ICON", "Helsinki": "UKMO", "Warsaw": "ECMWF", "Paris": "ECMWF",
-  "Amsterdam": "ICON", "Madrid": "GEM", "Milan": "ICON", "London": "ICON",
-  "Sao Paulo": "UKMO", "Buenos Aires": "ICON", "Toronto": "ECMWF", "NYC": "ICON",
-  "Panama": "UKMO", "Chicago": "GFS", "Mexico City": "UKMO", "Denver": "ICON",
-  "Miami": "UKMO", "Seattle": "ECMWF",
-};
+/**
+ * Calcula ranking dos modelos para uma cidade com base nos ultimos 30 dias.
+ * Compara previsoes (we_modelos) com maximas reais (we_leituras).
+ *
+ * @param {Array}  modelosHist  - registros de we_modelos (data_alvo, modelo, temp_max_prevista)
+ * @param {Object} maximaPorDia - { "YYYY-MM-DD": tempMax } calculado de we_leituras
+ * @param {Object} cidadeConfig - config da cidade (fuso_offset)
+ * @returns {{ ranking: Array, top3: Array }} ranking ordenado e os 3 melhores modelos
+ */
+function calcularRankingModelos(modelosHist, maximaPorDia, cidadeConfig) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const horaLocalAgora = ((new Date().getUTCHours() + cidadeConfig.fuso_offset) % 24 + 24) % 24;
 
-// Confianca do melhor modelo (% de acerto em 7 dias)
-const CONFIANCA_MODELO = {
-  "Wellington": 57, "Seoul": 71, "Tokyo": 43, "Busan": 71,
-  "Shanghai": 43, "Hong Kong": 14, "Beijing": 57, "Chongqing": 43,
-  "Taipei": 29, "Singapore": 57, "Kuala Lumpur": 29, "Jakarta": 30,
-  "Lucknow": 57, "Moscow": 29, "Ankara": 57, "Istanbul": 30,
-  "Tel Aviv": 29, "Helsinki": 71, "Warsaw": 71, "Paris": 57,
-  "Amsterdam": 71, "Madrid": 57, "Milan": 71, "London": 71,
-  "Sao Paulo": 43, "Buenos Aires": 29, "Toronto": 71, "NYC": 43,
-  "Panama": 43, "Chicago": 43, "Mexico City": 57, "Denver": 29,
-  "Miami": 30, "Seattle": 14,
-};
+  // Agrupar previsoes: chave "YYYY-MM-DD_MODELO" -> temp arredondada
+  const porDiaModelo = {};
+  modelosHist.forEach(m => {
+    const chave = `${m.data_alvo}_${m.modelo}`;
+    const val = parseFloat(m.temp_max_prevista);
+    if (!isNaN(val)) porDiaModelo[chave] = Math.round(val);
+  });
 
-// Ranking global de acuracia dos modelos
-const RANKING_GLOBAL = [
-  { modelo: "UKMO",  pct: 35 },
-  { modelo: "ICON",  pct: 29 },
-  { modelo: "GEM",   pct: 27 },
-  { modelo: "ECMWF", pct: 26 },
-  { modelo: "GFS",   pct: 24 },
-  { modelo: "JMA",   pct: 16 },
-];
+  // Contar acertos por modelo (so dias finalizados)
+  const MODELOS = ['ICON', 'UKMO', 'ECMWF', 'GFS', 'GEM', 'JMA'];
+  const acertos = {};
+  const totais = {};
+  MODELOS.forEach(m => { acertos[m] = 0; totais[m] = 0; });
+
+  Object.keys(maximaPorDia).forEach(dia => {
+    // Dia finalizado: antes de hoje, ou hoje apos 23h local
+    const diaFinalizado = dia < hoje || (dia === hoje && horaLocalAgora >= 23);
+    if (!diaFinalizado) return;
+
+    const real = Math.round(maximaPorDia[dia]);
+
+    MODELOS.forEach(modelo => {
+      const prev = porDiaModelo[`${dia}_${modelo}`];
+      if (prev !== undefined) {
+        totais[modelo]++;
+        if (prev === real) acertos[modelo]++;
+      }
+    });
+  });
+
+  // Montar ranking ordenado por percentual (desempate: total de acertos)
+  const ranking = MODELOS.map(m => ({
+    modelo: m,
+    acertos: acertos[m],
+    total: totais[m],
+    pct: totais[m] > 0 ? Math.round(acertos[m] / totais[m] * 100) : 0,
+  })).sort((a, b) => b.pct - a.pct || b.acertos - a.acertos);
+
+  const top3 = ranking.slice(0, 3).map(r => r.modelo);
+
+  return { ranking, top3 };
+}
 
 /**
  * Renderiza o card de previsoes dos 6 modelos para a cidade selecionada.
- * Mostra tabela com destaque do melhor modelo, consenso e ranking global.
+ * Mostra tabela com destaque do melhor modelo, consenso e ranking dinamico.
+ *
+ * @param {Array}       modelos      - previsoes do dia (we_modelos)
+ * @param {Object}      cidadeConfig - config da cidade
+ * @param {Object|null} rankingInfo  - resultado de calcularRankingModelos (opcional)
  */
-function renderizarModelos(modelos, cidadeConfig) {
+function renderizarModelos(modelos, cidadeConfig, rankingInfo) {
   const container = document.getElementById('modelos-conteudo');
   const cidade = cidadeConfig.nome;
   const unidade = cidadeConfig.unidade;
-  const melhor = MELHOR_MODELO[cidade] || 'ICON';
-  const conf = CONFIANCA_MODELO[cidade] || 30;
+
+  // Usar ranking dinamico se disponivel, senao placeholder vazio
+  const rankingDinamico = rankingInfo ? rankingInfo.ranking : [];
+  const top3 = rankingInfo ? rankingInfo.top3 : [];
+  const melhor = top3.length > 0 ? top3[0] : 'ICON';
+  const rankingMap = {};
+  rankingDinamico.forEach((r, i) => { rankingMap[r.modelo] = { pos: i, pct: r.pct, total: r.total }; });
+
+  // Conf do melhor modelo segundo ranking dinamico
+  const confMelhor = rankingMap[melhor] ? rankingMap[melhor].pct : null;
 
   if (!modelos || modelos.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="icon">&#127975;</div>Sem previsoes de modelos para hoje. Execute <code>coletar_modelos.py</code>.</div>';
@@ -1814,17 +1857,28 @@ function renderizarModelos(modelos, cidadeConfig) {
   const qtdConsenso = tempConsensoCandidatos.length > 0 ? tempConsensoCandidatos[0][1] : 0;
   const totalModelos = modelos.length;
 
-  // Montar tabela de modelos
+  // Cores e emojis para posicoes no ranking
+  const coresMedalha = ['#d4a017', '#c0c0c0', '#cd7f32'];
+  const emojisPos = ['&#129351;', '&#129352;', '&#129353;']; // 🥇🥈🥉
+
+  // Montar tabela de modelos com destaque por posicao no ranking
   let linhas = '';
   modelos.forEach(m => {
-    const ehMelhor = m.modelo === melhor;
+    const info = rankingMap[m.modelo];
+    const pos = info ? info.pos : 99;
+    const ehTop3 = pos < 3;
+    const ehMelhor = pos === 0;
     const temp = parseFloat(m.temp_max_prevista).toFixed(1);
+    const corModelo = ehTop3 ? coresMedalha[pos] : '';
+    const emojiModelo = ehTop3 ? emojisPos[pos] : '';
     const badge = ehMelhor ? `<span class="modelo-badge">MELHOR</span>` : '';
+    const pctStr = info && info.total > 0 ? `<span style="color:${corModelo || 'var(--gold)'};">${info.pct}%</span>` : '—';
+    const estilo = ehTop3 ? `style="color:${coresMedalha[pos]};"` : '';
     linhas += `
       <tr class="${ehMelhor ? 'melhor-modelo' : ''}">
-        <td><span class="modelo-nome ${ehMelhor ? 'destaque' : ''}">${m.modelo}${badge}</span></td>
-        <td>${temp}°${unidade}</td>
-        <td>${ehMelhor ? `<span class="gold">${conf}%</span>` : '—'}</td>
+        <td><span class="modelo-nome ${ehMelhor ? 'destaque' : ''}" ${estilo}>${emojiModelo} ${m.modelo}${badge}</span></td>
+        <td ${estilo}>${temp}°${unidade}</td>
+        <td>${pctStr}</td>
       </tr>
     `;
   });
@@ -1833,8 +1887,21 @@ function renderizarModelos(modelos, cidadeConfig) {
   const prevMelhor = modelos.find(m => m.modelo === melhor);
   const tempMelhor = prevMelhor ? `${parseFloat(prevMelhor.temp_max_prevista).toFixed(1)}°${unidade}` : '—';
 
-  // Ranking global como texto
-  const rankingStr = RANKING_GLOBAL.map((r, i) => `${i+1}. ${r.modelo} (${r.pct}%)`).join(' | ');
+  // Linha de ranking dinamico resumido (top 3)
+  let rankingResumoStr = '';
+  if (rankingDinamico.length > 0) {
+    rankingResumoStr = rankingDinamico.slice(0, 3).map((r, i) => {
+      const cor = coresMedalha[i];
+      const emoji = emojisPos[i];
+      const pctTxt = r.total > 0 ? `${r.pct}%` : '—';
+      return `<span style="color:${cor};">${emoji} ${r.modelo} (${pctTxt})</span>`;
+    }).join(' &nbsp;|&nbsp; ');
+  } else {
+    rankingResumoStr = '<span style="color:var(--text-sec);">Calculando... (aguardando dados de 30 dias)</span>';
+  }
+
+  // Conf para exibir na linha de melhor modelo
+  const confStr = confMelhor !== null ? `<span class="gold">${confMelhor}%</span>` : '<span style="color:var(--text-sec);">calculando...</span>';
 
   container.innerHTML = `
     <div style="font-size:12px; color:var(--text-sec); margin-bottom:14px;">
@@ -1845,7 +1912,7 @@ function renderizarModelos(modelos, cidadeConfig) {
         <tr>
           <th>Modelo</th>
           <th>Temp. Max</th>
-          <th>Confianca</th>
+          <th>Acerto (30d)</th>
         </tr>
       </thead>
       <tbody>${linhas}</tbody>
@@ -1854,15 +1921,15 @@ function renderizarModelos(modelos, cidadeConfig) {
       <div class="consenso-titulo">Consenso dos modelos</div>
       <div class="consenso-val">${tempConsenso}°${unidade} <span style="color:var(--text-sec); font-weight:400;">(${qtdConsenso}/${totalModelos} modelos concordam)</span></div>
       <div style="margin-top:6px; font-size:12px;">
-        Melhor modelo: <strong class="gold">${melhor}</strong>
+        Melhor modelo: <strong style="color:#d4a017;">${melhor}</strong>
         <span style="color:var(--text-sec);"> — previsao: </span>
         <strong>${tempMelhor}</strong>
         <span style="color:var(--text-sec);"> — acerto historico: </span>
-        <span class="gold">${conf}%</span>
+        ${confStr}
       </div>
     </div>
     <div class="ranking-global">
-      Ranking global (7d): ${rankingStr}
+      Ranking (30d): ${rankingResumoStr}
     </div>
   `;
 }
