@@ -2,8 +2,8 @@
 import asyncio
 import json
 import logging
-from collections import Counter
-from datetime import datetime, timezone, timedelta
+from collections import Counter, defaultdict
+from datetime import datetime, timezone, timedelta, date
 from pathlib import Path
 
 import httpx
@@ -20,35 +20,12 @@ HEADERS_SB = {
 TELEGRAM_TOKEN = "8694039991:AAHxcdfFgEPZbRugxzEQKrfUojoBwTJXv28"
 TELEGRAM_CHAT_ID = "6406646436"
 
-# Melhor modelo por cidade (baseado no teste de 7 dias)
-MELHOR_MODELO: dict[str, str] = {
-    "Wellington": "UKMO", "Seoul": "GEM", "Tokyo": "ECMWF", "Busan": "UKMO",
-    "Shanghai": "ECMWF", "Hong Kong": "GFS", "Beijing": "UKMO", "Chongqing": "ECMWF",
-    "Taipei": "ICON", "Singapore": "UKMO", "Kuala Lumpur": "GFS", "Jakarta": "UKMO",
-    "Lucknow": "ECMWF", "Moscow": "ECMWF", "Ankara": "ICON", "Istanbul": "ICON",
-    "Tel Aviv": "ICON", "Helsinki": "UKMO", "Warsaw": "ECMWF", "Paris": "ECMWF",
-    "Amsterdam": "ICON", "Madrid": "GEM", "Milan": "ICON", "London": "ICON",
-    "Sao Paulo": "UKMO", "Buenos Aires": "ICON", "Toronto": "ECMWF", "NYC": "ICON",
-    "Panama": "UKMO", "Chicago": "GFS", "Mexico City": "UKMO", "Denver": "ICON",
-    "Miami": "UKMO", "Seattle": "ECMWF",
-}
-
-# Confianca do melhor modelo (% de acerto em 7 dias)
-CONFIANCA: dict[str, int] = {
-    "Wellington": 57, "Seoul": 71, "Tokyo": 43, "Busan": 71,
-    "Shanghai": 43, "Hong Kong": 14, "Beijing": 57, "Chongqing": 43,
-    "Taipei": 29, "Singapore": 57, "Kuala Lumpur": 29, "Jakarta": 30,
-    "Lucknow": 57, "Moscow": 29, "Ankara": 57, "Istanbul": 30,
-    "Tel Aviv": 29, "Helsinki": 71, "Warsaw": 71, "Paris": 57,
-    "Amsterdam": 71, "Madrid": 57, "Milan": 71, "London": 71,
-    "Sao Paulo": 43, "Buenos Aires": 29, "Toronto": 71, "NYC": 43,
-    "Panama": 43, "Chicago": 43, "Mexico City": 57, "Denver": 29,
-    "Miami": 30, "Seattle": 14,
-}
-
 # Hora estimada de pico (hora local da cidade)
 HORA_PICO_LOCAL = 14  # 14h local como estimativa padrao
 HORA_ALERTA_LOCAL = HORA_PICO_LOCAL - 1  # alerta 1h antes = 13h local
+
+# Modelos disponiveis para avaliacao
+MODELOS_NOMES = ["ECMWF", "GFS", "ICON", "UKMO", "JMA", "GEM"]
 
 
 def carregar_cidades() -> list[dict]:
@@ -85,6 +62,94 @@ def buscar_supabase(endpoint: str, params: str = "") -> list[dict]:
     except Exception as e:
         logging.getLogger(__name__).warning(f"Erro ao buscar {endpoint}: {e}")
     return []
+
+
+def calcular_melhor_modelo(nome_cidade: str) -> tuple[str, int, list[str]]:
+    """Retorna (melhor_modelo, pct_acerto, top3) baseado nos ultimos 30 dias.
+
+    Busca historico real do Supabase e calcula qual modelo acertou mais
+    a temperatura maxima (comparando previsao arredondada com leitura real).
+    """
+    logger = logging.getLogger(__name__)
+    data_inicio = (date.today() - timedelta(days=30)).isoformat()
+
+    # Buscar previsoes dos modelos dos ultimos 30 dias
+    modelos = buscar_supabase(
+        "we_modelos",
+        f"cidade=eq.{nome_cidade}&data_alvo=gte.{data_inicio}&order=hora_captura.desc",
+    )
+
+    # Buscar leituras reais dos ultimos 30 dias
+    leituras = buscar_supabase(
+        "we_leituras",
+        f"cidade=eq.{nome_cidade}&data_alvo=gte.{data_inicio}&select=data_alvo,temperatura",
+    )
+
+    # Calcular maxima real por dia (pega o maior valor de temperatura no dia)
+    max_por_dia: dict[str, float] = defaultdict(lambda: -999.0)
+    for l in leituras:
+        try:
+            t = float(l.get("temperatura", 0))
+            dia = l["data_alvo"]
+            if t > max_por_dia[dia]:
+                max_por_dia[dia] = t
+        except (ValueError, KeyError):
+            continue
+
+    # Pegar apenas a coleta mais recente por combinacao dia+modelo
+    vistos: set[str] = set()
+    prev_por_dia: dict[str, dict[str, float]] = {}  # {dia: {modelo: temp_prevista}}
+    for m in modelos:
+        chave = f"{m['data_alvo']}_{m['modelo']}"
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        dia = m["data_alvo"]
+        if dia not in prev_por_dia:
+            prev_por_dia[dia] = {}
+        try:
+            prev_por_dia[dia][m["modelo"]] = float(m["temp_max_prevista"])
+        except (ValueError, KeyError):
+            continue
+
+    # Contar acertos apenas em dias ja finalizados (antes de hoje)
+    hoje = date.today().isoformat()
+    acertos: dict[str, int] = {m: 0 for m in MODELOS_NOMES}
+    totais: dict[str, int] = {m: 0 for m in MODELOS_NOMES}
+
+    for dia, prevs in prev_por_dia.items():
+        if dia >= hoje:
+            continue  # dia ainda nao finalizou, nao conta
+        real = max_por_dia.get(dia)
+        if real is None or real == -999.0:
+            continue  # sem leitura real para comparar
+        real_arred = round(real)
+        for modelo, temp in prevs.items():
+            if modelo in totais:
+                totais[modelo] += 1
+                if round(temp) == real_arred:
+                    acertos[modelo] += 1
+
+    # Montar ranking: modelos com pelo menos 1 previsao, ordenados por acertos
+    ranking = sorted(
+        [m for m in MODELOS_NOMES if totais[m] > 0],
+        key=lambda m: acertos[m],
+        reverse=True,
+    )
+
+    # Fallback se nao houver dados suficientes
+    if not ranking:
+        logger.warning(f"  Sem dados historicos para {nome_cidade}, usando ICON como fallback")
+        return "ICON", 0, ["ICON", "ECMWF", "GFS"]
+
+    melhor = ranking[0]
+    total_melhor = totais[melhor]
+    pct = round(acertos[melhor] / total_melhor * 100) if total_melhor > 0 else 0
+
+    top3 = ranking[:3]
+    logger.info(f"  {nome_cidade}: melhor={melhor} ({pct}%), top3={top3}")
+
+    return melhor, pct, top3
 
 
 async def verificar_alertas() -> None:
@@ -140,9 +205,8 @@ async def verificar_alertas() -> None:
             f"cidade=eq.{nome}&data_alvo=eq.{data_local}&order=coletado_em.desc&limit=20",
         )
 
-        # Determinar melhor modelo e confianca
-        melhor = MELHOR_MODELO.get(nome, "ICON")
-        conf = CONFIANCA.get(nome, 30)
+        # Calcular melhor modelo dinamicamente com base nos ultimos 30 dias
+        melhor, conf, top3 = calcular_melhor_modelo(nome)
 
         # Previsao do melhor modelo
         prev_melhor = next((m for m in modelos_previsao if m["modelo"] == melhor), None)
@@ -183,13 +247,17 @@ async def verificar_alertas() -> None:
         # Formatar temperatura atual
         temp_atual_str = f"{float(temp_atual):.0f}°{unidade}" if temp_atual is not None else "—"
 
+        # Formatar top3 dinamico
+        top3_str = " | ".join(f"#{i+1} {m}" for i, m in enumerate(top3))
+
         texto = (
             f"<b>⏰ {nome} — pico em ~1h</b>\n"
             f"\n"
             f"Pico previsto: ~{HORA_PICO_LOCAL}:00 local / {hora_pico_brt:02d}:00 BRT\n"
             f"Temp atual: {temp_atual_str}\n"
             f"\n"
-            f"<b>Melhor modelo: {melhor} (confianca {conf}%)</b>\n"
+            f"<b>Melhor modelo (30d): {melhor} (acerto {conf}%)</b>\n"
+            f"Ranking: {top3_str}\n"
             f"Previsao: {prev_temp}°{unidade}\n"
             f"Consenso: {faixa_consenso}°{unidade} ({qtd_consenso}/{total_modelos} modelos)\n"
             f"{modelos_str}\n"
