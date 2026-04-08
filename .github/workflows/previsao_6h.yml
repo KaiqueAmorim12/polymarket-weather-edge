@@ -1,0 +1,45 @@
+name: WeatherEdge - Previsao 6h Local
+
+on:
+  schedule:
+    # Cada horario UTC corresponde a 6h local de um grupo de cidades
+    - cron: '0 18 * * *'   # Wellington
+    - cron: '0 21 * * *'   # Seoul, Tokyo, Busan
+    - cron: '0 22 * * *'   # Shanghai, HK, Beijing, Taipei, Singapore, KL, Chongqing
+    - cron: '0 23 * * *'   # Jakarta
+    - cron: '0 1 * * *'    # Lucknow
+    - cron: '0 3 * * *'    # Moscow, Ankara, Istanbul, Tel Aviv, Helsinki
+    - cron: '0 4 * * *'    # Warsaw, Paris, Amsterdam, Madrid, Milan
+    - cron: '0 5 * * *'    # London
+    - cron: '0 9 * * *'    # Sao Paulo, Buenos Aires
+    - cron: '0 10 * * *'   # Toronto, NYC, Miami
+    - cron: '0 11 * * *'   # Panama, Chicago
+    - cron: '0 12 * * *'   # Mexico City, Denver
+    - cron: '0 13 * * *'   # Seattle
+  workflow_dispatch:        # permite rodar manualmente
+
+permissions:
+  contents: write
+
+jobs:
+  previsao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Instalar dependencias
+        run: pip install httpx
+
+      - name: Capturar previsao
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python capturar_previsao.py
