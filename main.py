@@ -79,19 +79,25 @@ async def coletar_cidade(
     else:
         logger.warning(f"  {nome}: sem leituras")
 
-    # 1.5 Capturar previsao de maxima (usa data LOCAL retornada pela API)
-    previsoes_forecast = await coletor.coletar_previsao(
-        latitude=cidade.get("latitude", 0),
-        longitude=cidade.get("longitude", 0),
-        unidade=cidade["unidade"],
-    )
-    if previsoes_forecast:
-        agora = datetime.now(timezone.utc).isoformat()[:16]
-        for prev in previsoes_forecast:
-            data_prev = prev["data_local"]
-            if data_prev and not repo.buscar_previsao(nome, data_prev):
-                repo.salvar_previsao(nome, data_prev, prev["temp_max"], cidade["unidade"], agora)
-                logger.info(f"  {nome}: previsao {data_prev} = {prev['temp_max']}{cidade['unidade']}")
+    # 1.5 Capturar previsao de maxima — SO do dia atual local (nao D+1)
+    # Calcular data local da cidade agora
+    agora_utc = datetime.now(timezone.utc)
+    data_local_cidade = (agora_utc + timedelta(hours=cidade["fuso_offset"])).strftime("%Y-%m-%d")
+
+    previsao_existente = repo.buscar_previsao(nome, data_local_cidade)
+    if not previsao_existente:
+        previsoes_forecast = await coletor.coletar_previsao(
+            latitude=cidade.get("latitude", 0),
+            longitude=cidade.get("longitude", 0),
+            unidade=cidade["unidade"],
+        )
+        if previsoes_forecast:
+            # Pegar so a previsao que corresponde ao dia local atual
+            prev_hoje = next((p for p in previsoes_forecast if p["data_local"] == data_local_cidade), None)
+            if prev_hoje:
+                agora_str = agora_utc.isoformat()[:16]
+                repo.salvar_previsao(nome, data_local_cidade, prev_hoje["temp_max"], cidade["unidade"], agora_str)
+                logger.info(f"  {nome}: previsao {data_local_cidade} = {prev_hoje['temp_max']}{cidade['unidade']}")
 
     # 2. Odds Polymarket (dia atual e amanha)
     conector = PolymarketConector()

@@ -85,12 +85,19 @@ async def capturar_previsao_cidades(nomes_cidades: list[str]) -> None:
             logger.warning(f"  {nome}: previsao nao disponivel")
             continue
 
-        agora = datetime.now(timezone.utc).isoformat()[:16]
-        for prev in previsoes:
-            data_prev = prev["data_local"]
-            if data_prev and not repo.buscar_previsao(nome, data_prev):
-                repo.salvar_previsao(nome, data_prev, prev["temp_max"], cidade["unidade"], agora)
-                logger.info(f"  {nome}: previsao {data_prev} = {prev['temp_max']}{cidade['unidade']} (captura 6h local)")
+        # Calcular data local atual da cidade
+        agora_utc = datetime.now(timezone.utc)
+        data_local = (agora_utc + timedelta(hours=cidade["fuso_offset"])).strftime("%Y-%m-%d")
+
+        # Salvar SO a previsao do dia atual local (nao D+1)
+        if not repo.buscar_previsao(nome, data_local):
+            prev_hoje = next((p for p in previsoes if p["data_local"] == data_local), None)
+            if prev_hoje:
+                agora_str = agora_utc.isoformat()[:16]
+                repo.salvar_previsao(nome, data_local, prev_hoje["temp_max"], cidade["unidade"], agora_str)
+                logger.info(f"  {nome}: previsao {data_local} = {prev_hoje['temp_max']}{cidade['unidade']} (captura 6h local)")
+            else:
+                logger.warning(f"  {nome}: API nao retornou previsao pra {data_local}")
 
 
 async def main_async(todas: bool = False) -> None:

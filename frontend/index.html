@@ -1225,7 +1225,7 @@ function calcularAcuraciaPrevisoes(previsoes, leiturasHistoricas) {
     const maxReal = maximaPorDia[p.data_alvo];
     if (maxReal === undefined) return; // dia sem leituras — pular
     total++;
-    if (Math.abs(parseFloat(p.temp_max_prevista) - maxReal) <= 1) {
+    if (Math.round(parseFloat(p.temp_max_prevista)) === Math.round(maxReal)) {
       acertos++;
     }
   });
@@ -1262,12 +1262,12 @@ function renderizarInfoPrevisao(previsao, leituras, cidadeConfig, acuracia) {
       <span><span class="label sec">Previsao ${hora}: </span><span class="val" style="color:#c0c0c0;">${prev.toFixed(1)}°${unidade}</span></span>
       ${maxReal !== null ? `<span><span class="label sec">Max real ate agora: </span><span class="val gold">${maxReal.toFixed(1)}°${unidade}</span></span>` : ''}
       ${diff !== null ? `<span><span class="label sec">Diferenca: </span>${diffStr}</span>` : ''}
-      ${acuracia ? `<span><span class="label sec">Acuracia 7d (±1°): </span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>` : ''}
+      ${acuracia ? `<span><span class="label sec">Acuracia 7d (exata):</span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>` : ''}
     </div>`;
   } else if (acuracia) {
     blocoPrevisao = `
     <div style="margin-top:10px; padding:10px 0; border-top:1px solid var(--border); width:100%; font-size:12px;">
-      <span><span class="label sec">Acuracia 7d (±1°): </span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>
+      <span><span class="label sec">Acuracia 7d (exata):</span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>
     </div>`;
   }
 
@@ -1554,31 +1554,41 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
     const maxReal = maximaPorDia[dataAlvo];
     const realStr = maxReal !== undefined ? `${maxReal.toFixed(1)}°${unidade}` : '—';
 
-    // Diferenca: previsao - real (positivo = previu mais quente, negativo = previu mais frio)
+    // Verificar se o dia ja acabou (hora local > 23h ou data anterior a hoje)
+    const hoje = new Date().toISOString().slice(0, 10);
+    const agoraUTC = new Date();
+    const horaLocalAgora = ((agoraUTC.getUTCHours() + cidadeConfig.fuso_offset) % 24 + 24) % 24;
+    const diaFinalizado = p.data_alvo < hoje || (p.data_alvo === hoje && horaLocalAgora >= 23);
+
+    // Diferenca: previsao - real (acerto EXATO, sem tolerancia)
     let diffHtml = '—';
     let acertouHtml = '—';
     if (maxReal !== undefined && !isNaN(prev)) {
       const diff = prev - maxReal;
       const diffAbs = Math.abs(diff);
       const diffSinal = diff > 0 ? '+' : '';
-      totalComReal++;
-      somaErros += diffAbs;
 
-      // Cor: verde se ±1°, vermelho se >2°, dourado se entre 1° e 2°
-      let diffClasse = 'diff-zero';
-      if (diffAbs <= 1) {
-        diffClasse = 'diff-ok';
-        acertos++;
-        acertouHtml = '&#9989;'; // ✅
-      } else if (diffAbs > 2) {
-        diffClasse = 'diff-ruim';
-        acertouHtml = '&#10060;'; // ❌
+      if (diaFinalizado) {
+        totalComReal++;
+        somaErros += diffAbs;
+
+        // Acerto EXATO: arredondar ambos e comparar
+        const prevArredondado = Math.round(prev);
+        const realArredondado = Math.round(maxReal);
+        let diffClasse = 'diff-ruim';
+        if (prevArredondado === realArredondado) {
+          diffClasse = 'diff-ok';
+          acertos++;
+          acertouHtml = '&#9989;'; // ✅
+        } else {
+          acertouHtml = '&#10060;'; // ❌
+        }
+        diffHtml = `<span class="${diffClasse}">${diffSinal}${diff.toFixed(1)}°</span>`;
       } else {
-        diffClasse = 'diff-zero'; // dourado para 1-2°
-        acertouHtml = '&#10060;'; // ❌
+        // Dia em andamento — mostrar diferença parcial
+        diffHtml = `<span style="color:var(--text-sec)">${diffSinal}${diff.toFixed(1)}° &#9203;</span>`;
+        acertouHtml = '<span style="color:var(--text-sec)">&#9203;</span>'; // ⏳
       }
-
-      diffHtml = `<span class="${diffClasse}">${diffSinal}${diff.toFixed(1)}°</span>`;
     }
 
     // Hora de captura → converter para hora local da cidade
@@ -1611,7 +1621,7 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
     resumoHtml = `
       <div class="hist-resumo">
         <div class="hist-resumo-item">
-          <span class="lbl">Acuracia (&#177;1&#176;):</span>
+          <span class="lbl">Acuracia (exata):</span>
           <span class="val ${acuraciaClass}">${acuraciaPct}%</span>
           <span class="sec" style="font-size:11px;"> (${acertos}/${totalComReal} dias)</span>
         </div>
