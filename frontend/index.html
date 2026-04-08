@@ -497,6 +497,37 @@
     .hist-resumo-item .lbl { color: var(--text-sec); }
     .hist-resumo-item .val { color: var(--text-main); font-weight: 700; margin-left: 4px; }
 
+    /* HISTORICO MULTI-MODELO */
+    .modelos-hist-table { width: 100%; overflow-x: auto; }
+    .modelos-hist-table table { min-width: 700px; border-collapse: collapse; width: 100%; }
+    .modelos-hist-table th {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-sec); padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .modelos-hist-table th.melhor-modelo { color: #d4a017; border-bottom: 2px solid #d4a017; }
+    .modelos-hist-table td {
+      padding: 9px 12px; font-size: 13px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .modelos-hist-table tr:last-child td { border-bottom: none; }
+    .modelos-hist-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+    .modelos-hist-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .modelos-hist-table tr.dia-atual td { background: rgba(255,255,255,0.04); }
+    .modelos-hist-table td.acertou { color: #22c55e; font-weight: 700; }
+    .modelos-hist-table td.errou   { color: #ef4444; }
+    .modelos-hist-table td.parcial { color: #8892a4; }
+    .modelos-hist-table td.real    { color: #d4a017; font-weight: 700; }
+    .modelos-hist-acuracia {
+      padding: 14px 0 2px; font-size: 13px; line-height: 1.9;
+    }
+    .modelos-hist-acuracia .titulo { color: var(--text-sec); margin-bottom: 6px; }
+    .modelos-hist-acuracia .linha-modelos {
+      display: flex; gap: 20px; flex-wrap: wrap;
+    }
+    .modelos-hist-acuracia .item-modelo { white-space: nowrap; }
+    .modelos-hist-acuracia .item-modelo.destaque { color: #d4a017; font-weight: 700; }
+
     /* MODELOS METEOROLOGICOS */
     .modelos-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
     .modelos-tabela th {
@@ -628,7 +659,7 @@
 
     <!-- Historico de Previsoes -->
     <div class="card detail-card" style="margin-top: 20px;" id="historico-previsoes-card">
-      <h3>&#128200; Historico de Previsoes (30 dias)</h3>
+      <h3>&#128200; Historico de Previsoes — 6 Modelos (14 dias)</h3>
       <div id="historico-previsoes-conteudo">
         <div class="loading"><div class="spinner"></div> Carregando historico...</div>
       </div>
@@ -1547,27 +1578,36 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
   container.innerHTML = '<div class="loading"><div class="spinner"></div> Carregando historico...</div>';
 
   const unidade = cidadeConfig.unidade;
+  const cidade = cidadeConfig.nome;
+  const melhorModelo = MELHOR_MODELO[cidade] || 'ICON';
+  const MODELOS = ['ICON', 'UKMO', 'ECMWF', 'GFS', 'GEM', 'JMA'];
 
-  // 1. Buscar previsoes dos ultimos 30 dias, ordenadas da mais recente
-  const previsoes = await supabaseFetch(
-    `we_previsoes?cidade=eq.${encodeURIComponent(nomeCidade)}&order=data_alvo.desc&limit=30`
-  );
+  // 1. Buscar previsoes dos ultimos 14 dias (tabela we_modelos)
+  const dataInicio = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const [modelosHist, leiturasHist] = await Promise.all([
+    supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&order=data_alvo.desc,modelo`),
+    supabaseFetch(`we_leituras?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&select=data_alvo,temperatura`)
+  ]);
 
-  if (!previsoes || previsoes.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">&#128200;</div>Nenhuma previsao encontrada nos ultimos 30 dias.</div>';
+  if (!modelosHist || modelosHist.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128200;</div>Nenhuma previsao de modelos encontrada nos ultimos 14 dias.</div>';
     return;
   }
 
-  // 2. Buscar todas as leituras do periodo de uma vez (otimizado)
-  const dataInicio = previsoes[previsoes.length - 1].data_alvo;
-  const todasLeituras = await supabaseFetch(
-    `we_leituras?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&select=data_alvo,temperatura`
-  );
+  // 2. Agrupar previsoes por dia e modelo: { "2026-04-05": { ICON: 23, ECMWF: 22, ... } }
+  const prevPorDia = {};
+  modelosHist.forEach(m => {
+    const dia = m.data_alvo;
+    if (!dia) return;
+    if (!prevPorDia[dia]) prevPorDia[dia] = {};
+    const val = parseFloat(m.temp_max_prevista);
+    if (!isNaN(val)) prevPorDia[dia][m.modelo] = val;
+  });
 
-  // 3. Agrupar leituras por dia e pegar a maxima de cada um
+  // 3. Maxima real por dia
   const maximaPorDia = {};
-  if (todasLeituras && todasLeituras.length > 0) {
-    todasLeituras.forEach(l => {
+  if (leiturasHist && leiturasHist.length > 0) {
+    leiturasHist.forEach(l => {
       const dia = l.data_alvo;
       if (!dia) return;
       const t = parseFloat(l.temperatura);
@@ -1578,121 +1618,120 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
     });
   }
 
-  // 4. Calcular metricas gerais
-  let acertos = 0;
-  let totalComReal = 0;
-  let somaErros = 0;
+  // 4. Lista de dias ordenados do mais recente pro mais antigo
+  const dias = Object.keys(prevPorDia).sort((a, b) => b.localeCompare(a));
 
-  // 5. Montar linhas da tabela
+  const hoje = new Date().toISOString().slice(0, 10);
+  const horaLocalAgora = ((new Date().getUTCHours() + cidadeConfig.fuso_offset) % 24 + 24) % 24;
+
+  // 5. Acuracia por modelo (apenas dias finalizados)
+  const acuraciaModelos = {};
+  MODELOS.forEach(m => { acuraciaModelos[m] = { acertos: 0, total: 0 }; });
+
+  // 6. Montar linhas da tabela
   let linhasHtml = '';
-  previsoes.forEach(p => {
-    const dataAlvo = p.data_alvo || '—';
-    // Formatar data: YYYY-MM-DD → DD/MM
-    const dataFormatada = dataAlvo.length >= 10
-      ? `${dataAlvo.slice(8, 10)}/${dataAlvo.slice(5, 7)}`
-      : dataAlvo;
-
-    const prev = parseFloat(p.temp_max_prevista);
-    const prevStr = isNaN(prev) ? '—' : `${prev.toFixed(1)}°${unidade}`;
-
+  dias.forEach(dataAlvo => {
+    const dataFormatada = `${dataAlvo.slice(8, 10)}/${dataAlvo.slice(5, 7)}`;
+    const diaFinalizado = dataAlvo < hoje || (dataAlvo === hoje && horaLocalAgora >= 23);
+    const ehHoje = dataAlvo === hoje;
     const maxReal = maximaPorDia[dataAlvo];
-    const realStr = maxReal !== undefined ? `${maxReal.toFixed(1)}°${unidade}` : '—';
+    const realArredondado = maxReal !== undefined ? Math.round(maxReal) : null;
 
-    // Verificar se o dia ja acabou (hora local > 23h ou data anterior a hoje)
-    const hoje = new Date().toISOString().slice(0, 10);
-    const agoraUTC = new Date();
-    const horaLocalAgora = ((agoraUTC.getUTCHours() + cidadeConfig.fuso_offset) % 24 + 24) % 24;
-    const diaFinalizado = p.data_alvo < hoje || (p.data_alvo === hoje && horaLocalAgora >= 23);
+    const statusHtml = diaFinalizado
+      ? '<span style="color:var(--text-sec);font-size:11px;">FINAL</span>'
+      : '&#9203;';
 
-    // Diferenca: previsao - real (acerto EXATO, sem tolerancia)
-    let diffHtml = '—';
-    let acertouHtml = '—';
-    if (maxReal !== undefined && !isNaN(prev)) {
-      const diff = prev - maxReal;
-      const diffAbs = Math.abs(diff);
-      const diffSinal = diff > 0 ? '+' : '';
+    let celulaReal = '—';
+    if (maxReal !== undefined) {
+      celulaReal = `${maxReal.toFixed(1)}&#176;${unidade}`;
+    }
 
-      if (diaFinalizado) {
-        totalComReal++;
-        somaErros += diffAbs;
-
-        // Acerto EXATO: arredondar ambos e comparar
-        const prevArredondado = Math.round(prev);
-        const realArredondado = Math.round(maxReal);
-        let diffClasse = 'diff-ruim';
-        if (prevArredondado === realArredondado) {
-          diffClasse = 'diff-ok';
-          acertos++;
-          acertouHtml = '&#9989;'; // ✅
-        } else {
-          acertouHtml = '&#10060;'; // ❌
-        }
-        diffHtml = `<span class="${diffClasse}">${diffSinal}${diff.toFixed(1)}°</span>`;
-      } else {
-        // Dia em andamento — mostrar diferença parcial
-        diffHtml = `<span style="color:var(--text-sec)">${diffSinal}${diff.toFixed(1)}° &#9203;</span>`;
-        acertouHtml = '<span style="color:var(--text-sec)">&#9203;</span>'; // ⏳
+    // Celulas de cada modelo
+    let celulasMod = '';
+    MODELOS.forEach(mod => {
+      const prev = prevPorDia[dataAlvo][mod];
+      if (prev === undefined) {
+        celulasMod += `<td class="parcial">—</td>`;
+        return;
       }
-    }
+      const prevStr = `${prev.toFixed(1)}&#176;${unidade}`;
+      if (!diaFinalizado) {
+        // Dia em andamento
+        celulasMod += `<td class="parcial">${prevStr}</td>`;
+        return;
+      }
+      // Dia finalizado: comparar com real
+      if (realArredondado === null) {
+        celulasMod += `<td class="parcial">${prevStr}</td>`;
+        return;
+      }
+      const acertou = Math.round(prev) === realArredondado;
+      acuraciaModelos[mod].total++;
+      if (acertou) acuraciaModelos[mod].acertos++;
+      const classe = acertou ? 'acertou' : 'errou';
+      const icone = acertou ? ' &#9989;' : '';
+      celulasMod += `<td class="${classe}">${prevStr}${icone}</td>`;
+    });
 
-    // Hora de captura → converter para hora local da cidade
-    let capturaStr = '—';
-    if (p.hora_captura) {
-      // hora_captura e timestamp ISO, ex: "2026-04-05T23:05:00"
-      const horaUTCStr = p.hora_captura.slice(11, 16); // "HH:MM"
-      capturaStr = converterParaLocal(horaUTCStr, cidadeConfig.fuso_offset) + ' local';
-    }
-
+    const trClasse = ehHoje ? ' class="dia-atual"' : '';
     linhasHtml += `
-      <tr>
+      <tr${trClasse}>
         <td>${dataFormatada}</td>
-        <td>${prevStr}</td>
-        <td>${realStr}</td>
-        <td>${diffHtml}</td>
-        <td style="text-align:center;">${acertouHtml}</td>
-        <td class="sec">${capturaStr}</td>
+        ${celulasMod}
+        <td class="real">${celulaReal}</td>
+        <td style="text-align:center;">${statusHtml}</td>
       </tr>
     `;
   });
 
-  // 6. Calcular resumo
-  const acuraciaPct = totalComReal > 0 ? Math.round(acertos / totalComReal * 100) : null;
-  const erroMedio   = totalComReal > 0 ? (somaErros / totalComReal).toFixed(1) : null;
+  // 7. Cabecalhos dos modelos (destacar o melhor)
+  let thModelos = '';
+  MODELOS.forEach(mod => {
+    const classe = mod === melhorModelo ? ' class="melhor-modelo"' : '';
+    thModelos += `<th${classe}>${mod}</th>`;
+  });
 
-  let resumoHtml = '';
-  if (totalComReal > 0) {
-    const acuraciaClass = acuraciaPct >= 70 ? 'green' : (acuraciaPct >= 50 ? 'gold' : 'red');
-    resumoHtml = `
-      <div class="hist-resumo">
-        <div class="hist-resumo-item">
-          <span class="lbl">Acuracia (exata):</span>
-          <span class="val ${acuraciaClass}">${acuraciaPct}%</span>
-          <span class="sec" style="font-size:11px;"> (${acertos}/${totalComReal} dias)</span>
-        </div>
-        <div class="hist-resumo-item">
-          <span class="lbl">Erro medio:</span>
-          <span class="val">&#177;${erroMedio}&#176;${unidade}</span>
-        </div>
-        <div class="hist-resumo-item">
-          <span class="lbl">Dias analisados:</span>
-          <span class="val">${totalComReal}</span>
-        </div>
-      </div>
-    `;
-  }
+  // 8. Resumo de acuracia
+  let melhorAcuraciaVal = -1;
+  let melhorAcuraciaMod = '';
+  MODELOS.forEach(mod => {
+    const { acertos, total } = acuraciaModelos[mod];
+    if (total > 0 && acertos / total > melhorAcuraciaVal) {
+      melhorAcuraciaVal = acertos / total;
+      melhorAcuraciaMod = mod;
+    }
+  });
 
-  // 7. Montar HTML final
+  let itensAcuracia = '';
+  MODELOS.forEach(mod => {
+    const { acertos, total } = acuraciaModelos[mod];
+    if (total === 0) {
+      itensAcuracia += `<span class="item-modelo">${mod}: —</span>`;
+      return;
+    }
+    const pct = Math.round(acertos / total * 100);
+    const sufixo = mod === melhorAcuraciaMod ? ' &lt;&lt;&lt;melhor' : '';
+    const classe = mod === melhorAcuraciaMod ? 'item-modelo destaque' : 'item-modelo';
+    itensAcuracia += `<span class="${classe}">${mod}: ${acertos}/${total} (${pct}%)${sufixo}</span>`;
+  });
+
+  const resumoHtml = `
+    <div class="modelos-hist-acuracia">
+      <div class="titulo">Acuracia (dias finalizados):</div>
+      <div class="linha-modelos">${itensAcuracia}</div>
+    </div>
+  `;
+
+  // 9. Montar HTML final
   container.innerHTML = `
-    <div class="table-wrapper">
-      <table class="hist-table">
+    <div class="modelos-hist-table">
+      <table>
         <thead>
           <tr>
             <th>Data</th>
-            <th>Previsao</th>
-            <th>Real (max)</th>
-            <th>Diferenca</th>
-            <th style="text-align:center;">Acertou (&#177;1&#176;)</th>
-            <th>Captura</th>
+            ${thModelos}
+            <th>Real</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
