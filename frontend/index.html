@@ -1249,12 +1249,22 @@ async function abrirDetalhe(nomeCidade) {
 
   // Buscar modelos do dia e historico em paralelo
   const [modelosData, rankingInfo] = await Promise.all([
-    supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=eq.${dataHoje}&order=modelo`),
+    supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=eq.${dataHoje}&order=hora_captura.desc,modelo`),
     renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig),
   ]);
 
+  // Filtrar: pegar so a coleta mais recente de cada modelo (pode ter log de varias horas)
+  const modelosMaisRecentes = [];
+  const modelosVistos = new Set();
+  modelosData.forEach(m => {
+    if (!modelosVistos.has(m.modelo)) {
+      modelosVistos.add(m.modelo);
+      modelosMaisRecentes.push(m); // ja vem ordenado por hora_captura desc
+    }
+  });
+
   // Renderizar card de modelos com ranking dinamico ja calculado
-  renderizarModelos(modelosData, cidadeConfig, rankingInfo);
+  renderizarModelos(modelosMaisRecentes, cidadeConfig, rankingInfo);
 }
 
 function voltarParaGrid() {
@@ -1586,7 +1596,7 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
   // 1. Buscar previsoes dos ultimos 30 dias (tabela we_modelos)
   const dataInicio = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [modelosHist, leiturasHist] = await Promise.all([
-    supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&order=data_alvo.desc,modelo`),
+    supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&order=data_alvo.desc,hora_captura.desc,modelo`),
     supabaseFetch(`we_leituras?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=gte.${dataInicio}&select=data_alvo,temperatura`)
   ]);
 
@@ -1595,11 +1605,16 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
     return null;
   }
 
-  // 2. Agrupar previsoes por dia e modelo: { "2026-04-05": { ICON: 23, ECMWF: 22, ... } }
+  // 2. Agrupar previsoes por dia e modelo (pegar so a mais recente de cada dia/modelo)
+  // Dados vem ordenados por hora_captura.desc — o primeiro de cada dia/modelo eh o mais recente
   const prevPorDia = {};
+  const prevVistos = new Set();
   modelosHist.forEach(m => {
     const dia = m.data_alvo;
     if (!dia) return;
+    const chave = `${dia}_${m.modelo}`;
+    if (prevVistos.has(chave)) return; // ja tem coleta mais recente
+    prevVistos.add(chave);
     if (!prevPorDia[dia]) prevPorDia[dia] = {};
     const val = parseFloat(m.temp_max_prevista);
     if (!isNaN(val)) prevPorDia[dia][m.modelo] = val;
@@ -1771,10 +1786,13 @@ function calcularRankingModelos(modelosHist, maximaPorDia, cidadeConfig) {
   const hoje = new Date().toISOString().slice(0, 10);
   const horaLocalAgora = ((new Date().getUTCHours() + cidadeConfig.fuso_offset) % 24 + 24) % 24;
 
-  // Agrupar previsoes: chave "YYYY-MM-DD_MODELO" -> temp arredondada
+  // Agrupar previsoes: chave "YYYY-MM-DD_MODELO" -> temp arredondada (so a mais recente)
   const porDiaModelo = {};
+  const rankVistos = new Set();
   modelosHist.forEach(m => {
     const chave = `${m.data_alvo}_${m.modelo}`;
+    if (rankVistos.has(chave)) return; // ja tem coleta mais recente
+    rankVistos.add(chave);
     const val = parseFloat(m.temp_max_prevista);
     if (!isNaN(val)) porDiaModelo[chave] = Math.round(val);
   });
