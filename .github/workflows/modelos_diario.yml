@@ -2,20 +2,9 @@ name: WeatherEdge - Coleta Modelos
 
 on:
   schedule:
-    # Rodar junto com cada gatilho de previsao (6h local de cada grupo de cidades)
-    - cron: '0 18 * * *'   # 6h Wellington (UTC+12)
-    - cron: '0 21 * * *'   # 6h Seoul/Tokyo (UTC+9)
-    - cron: '0 22 * * *'   # 6h Shanghai/HK/Beijing (UTC+8)
-    - cron: '0 23 * * *'   # 6h Jakarta (UTC+7)
-    - cron: '0 1 * * *'    # 6h Moscow/Ankara/Istanbul (UTC+3)
-    - cron: '0 3 * * *'    # 6h Warsaw/Paris/Amsterdam (UTC+2) / London (UTC+1)
-    - cron: '0 4 * * *'    # 6h London (UTC+1) / extra
-    - cron: '0 5 * * *'    # extra
-    - cron: '0 9 * * *'    # 6h Sao Paulo/Buenos Aires (UTC-3)
-    - cron: '0 10 * * *'   # 6h Toronto/Miami/NYC (UTC-4)
-    - cron: '0 11 * * *'   # 6h Panama/Chicago (UTC-5)
-    - cron: '0 12 * * *'   # 6h Mexico City/Denver (UTC-6)
-    - cron: '0 13 * * *'   # 6h Seattle (UTC-7)
+    # Rodar a cada hora — modelos meteorologicos atualizam a cada 6h
+    # mas coletando a cada 1h garante previsao mais recente possivel
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:

@@ -110,8 +110,19 @@ async def coletar() -> None:
 
     logger.info(f"Coletadas {len(registros)} previsoes de {len(cidades) * len(MODELOS)} tentativas")
 
-    # Salvar no Supabase em batch
+    # Deletar previsoes anteriores do mesmo dia (pra atualizar com dados mais recentes)
     if registros:
+        datas_cidades = set((r["cidade"], r["data_alvo"]) for r in registros)
+        for cidade, data in datas_cidades:
+            try:
+                httpx.delete(
+                    f"{SUPABASE_URL}/rest/v1/we_modelos?cidade=eq.{cidade}&data_alvo=eq.{data}",
+                    headers=HEADERS_SB, timeout=10,
+                )
+            except:
+                pass
+
+        # Salvar novos registros
         try:
             r = httpx.post(
                 f"{SUPABASE_URL}/rest/v1/we_modelos",

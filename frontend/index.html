@@ -1903,9 +1903,17 @@ function renderizarModelos(modelos, cidadeConfig, rankingInfo) {
   // Conf para exibir na linha de melhor modelo
   const confStr = confMelhor !== null ? `<span class="gold">${confMelhor}%</span>` : '<span style="color:var(--text-sec);">calculando...</span>';
 
+  // Hora da ultima atualizacao (pegar do primeiro modelo)
+  const horaCaptura = modelos[0] && modelos[0].hora_captura ? modelos[0].hora_captura.slice(11, 16) : null;
+  const horaLocalCaptura = horaCaptura ? converterParaLocal(horaCaptura, cidadeConfig.fuso_offset) : '—';
+  const horaBRTCaptura = horaCaptura ? converterParaBRT(converterParaLocal(horaCaptura, cidadeConfig.fuso_offset), cidadeConfig.fuso_offset) : '—';
+  // Converter UTC direto pra BRT
+  const horaBRT = horaCaptura ? converterParaLocal(horaCaptura, -3) : '—';
+
   container.innerHTML = `
     <div style="font-size:12px; color:var(--text-sec); margin-bottom:14px;">
       Previsoes para <strong style="color:var(--text-main)">${dataFormatada}</strong>
+      &nbsp;|&nbsp; Atualizado as <strong style="color:var(--gold);">${horaLocalCaptura} local</strong> (<strong>${horaBRT} BRT</strong>)
     </div>
     <table class="modelos-tabela">
       <thead>
