@@ -111,6 +111,16 @@ class Repositorio:
         data_inicio = (date.today() - timedelta(days=dias)).isoformat()
         return self._get("we_previsoes", f"cidade=eq.{cidade}&data_alvo=gte.{data_inicio}&order=data_alvo.desc")
 
+    # --- Modelos ---
+
+    def salvar_modelos_batch(self, registros: list[dict]) -> None:
+        """Salva previsoes de multiplos modelos de uma vez (batch insert)."""
+        self._post("we_modelos", registros)
+
+    def buscar_modelos(self, cidade: str, data_alvo: str) -> list[dict]:
+        """Busca todas as previsoes de modelos para uma cidade e data."""
+        return self._get("we_modelos", f"cidade=eq.{cidade}&data_alvo=eq.{data_alvo}&order=criado_em.desc")
+
     def calcular_metricas(self) -> dict:
         apostas = self._get("we_apostas", "select=resultado,pnl,valor")
         total = len(apostas)

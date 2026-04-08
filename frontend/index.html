@@ -496,6 +496,38 @@
     }
     .hist-resumo-item .lbl { color: var(--text-sec); }
     .hist-resumo-item .val { color: var(--text-main); font-weight: 700; margin-left: 4px; }
+
+    /* MODELOS METEOROLOGICOS */
+    .modelos-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .modelos-tabela th {
+      text-align: left; padding: 8px 12px;
+      color: var(--text-sec); font-weight: 600; font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modelos-tabela td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    .modelos-tabela tr:last-child td { border-bottom: none; }
+    .modelos-tabela tr.melhor-modelo td { background: rgba(212,160,23,0.07); }
+    .modelos-tabela tr.melhor-modelo td:first-child {
+      border-left: 3px solid var(--gold);
+    }
+    .modelo-nome { font-weight: 700; }
+    .modelo-nome.destaque { color: var(--gold); }
+    .modelo-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+      background: rgba(212,160,23,0.2); color: var(--gold);
+    }
+    .consenso-bar {
+      margin-top: 14px; padding: 12px 14px;
+      background: rgba(255,255,255,0.03); border-radius: 8px;
+      font-size: 13px;
+    }
+    .consenso-bar .consenso-titulo { color: var(--text-sec); font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .consenso-bar .consenso-val { font-weight: 700; color: var(--text-main); }
+    .ranking-global {
+      margin-top: 10px; font-size: 11px; color: var(--text-sec);
+    }
   </style>
 </head>
 <body>
@@ -583,6 +615,14 @@
         <div id="odds-list" class="odds-list">
           <div class="loading"><div class="spinner"></div> Carregando odds...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Previsoes dos Modelos -->
+    <div class="card detail-card" style="margin-top: 20px;" id="modelos-card">
+      <h3>&#127975; Previsoes dos Modelos</h3>
+      <div id="modelos-conteudo">
+        <div class="loading"><div class="spinner"></div> Carregando modelos...</div>
       </div>
     </div>
 
@@ -1176,6 +1216,10 @@ async function abrirDetalhe(nomeCidade) {
   // Renderizar odds
   renderizarOdds(odds);
 
+  // Buscar e renderizar previsoes dos 6 modelos
+  const modelosData = await supabaseFetch(`we_modelos?cidade=eq.${encodeURIComponent(nomeCidade)}&data_alvo=eq.${dataHoje}&order=modelo`);
+  renderizarModelos(modelosData, cidadeConfig);
+
   // Renderizar historico de previsoes dos ultimos 30 dias
   renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig);
 }
@@ -1657,6 +1701,130 @@ async function renderizarHistoricoPrevisoes(nomeCidade, cidadeConfig) {
       </table>
     </div>
     ${resumoHtml}
+  `;
+}
+
+// ==============================================================
+// MODELOS METEOROLOGICOS
+// ==============================================================
+
+// Melhor modelo por cidade (baseado em teste de 7 dias)
+const MELHOR_MODELO = {
+  "Wellington": "UKMO", "Seoul": "GEM", "Tokyo": "ECMWF", "Busan": "UKMO",
+  "Shanghai": "ECMWF", "Hong Kong": "GFS", "Beijing": "UKMO", "Chongqing": "ECMWF",
+  "Taipei": "ICON", "Singapore": "UKMO", "Kuala Lumpur": "GFS", "Jakarta": "UKMO",
+  "Lucknow": "ECMWF", "Moscow": "ECMWF", "Ankara": "ICON", "Istanbul": "ICON",
+  "Tel Aviv": "ICON", "Helsinki": "UKMO", "Warsaw": "ECMWF", "Paris": "ECMWF",
+  "Amsterdam": "ICON", "Madrid": "GEM", "Milan": "ICON", "London": "ICON",
+  "Sao Paulo": "UKMO", "Buenos Aires": "ICON", "Toronto": "ECMWF", "NYC": "ICON",
+  "Panama": "UKMO", "Chicago": "GFS", "Mexico City": "UKMO", "Denver": "ICON",
+  "Miami": "UKMO", "Seattle": "ECMWF",
+};
+
+// Confianca do melhor modelo (% de acerto em 7 dias)
+const CONFIANCA_MODELO = {
+  "Wellington": 57, "Seoul": 71, "Tokyo": 43, "Busan": 71,
+  "Shanghai": 43, "Hong Kong": 14, "Beijing": 57, "Chongqing": 43,
+  "Taipei": 29, "Singapore": 57, "Kuala Lumpur": 29, "Jakarta": 30,
+  "Lucknow": 57, "Moscow": 29, "Ankara": 57, "Istanbul": 30,
+  "Tel Aviv": 29, "Helsinki": 71, "Warsaw": 71, "Paris": 57,
+  "Amsterdam": 71, "Madrid": 57, "Milan": 71, "London": 71,
+  "Sao Paulo": 43, "Buenos Aires": 29, "Toronto": 71, "NYC": 43,
+  "Panama": 43, "Chicago": 43, "Mexico City": 57, "Denver": 29,
+  "Miami": 30, "Seattle": 14,
+};
+
+// Ranking global de acuracia dos modelos
+const RANKING_GLOBAL = [
+  { modelo: "UKMO",  pct: 35 },
+  { modelo: "ICON",  pct: 29 },
+  { modelo: "GEM",   pct: 27 },
+  { modelo: "ECMWF", pct: 26 },
+  { modelo: "GFS",   pct: 24 },
+  { modelo: "JMA",   pct: 16 },
+];
+
+/**
+ * Renderiza o card de previsoes dos 6 modelos para a cidade selecionada.
+ * Mostra tabela com destaque do melhor modelo, consenso e ranking global.
+ */
+function renderizarModelos(modelos, cidadeConfig) {
+  const container = document.getElementById('modelos-conteudo');
+  const cidade = cidadeConfig.nome;
+  const unidade = cidadeConfig.unidade;
+  const melhor = MELHOR_MODELO[cidade] || 'ICON';
+  const conf = CONFIANCA_MODELO[cidade] || 30;
+
+  if (!modelos || modelos.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#127975;</div>Sem previsoes de modelos para hoje. Execute <code>coletar_modelos.py</code>.</div>';
+    return;
+  }
+
+  // Calcular data de hoje formatada
+  const dataHoje = dataHojeUTC();
+  const dataFormatada = dataHoje.length >= 10
+    ? `${dataHoje.slice(8,10)}/${dataHoje.slice(5,7)}/${dataHoje.slice(0,4)}`
+    : dataHoje;
+
+  // Calcular consenso: qual temperatura aparece mais entre os modelos
+  const tempArredondadas = modelos.map(m => Math.round(parseFloat(m.temp_max_prevista)));
+  const contagem = {};
+  tempArredondadas.forEach(t => { contagem[t] = (contagem[t] || 0) + 1; });
+  const tempConsensoCandidatos = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+  const tempConsenso = tempConsensoCandidatos.length > 0 ? tempConsensoCandidatos[0][0] : '?';
+  const qtdConsenso = tempConsensoCandidatos.length > 0 ? tempConsensoCandidatos[0][1] : 0;
+  const totalModelos = modelos.length;
+
+  // Montar tabela de modelos
+  let linhas = '';
+  modelos.forEach(m => {
+    const ehMelhor = m.modelo === melhor;
+    const temp = parseFloat(m.temp_max_prevista).toFixed(1);
+    const badge = ehMelhor ? `<span class="modelo-badge">MELHOR</span>` : '';
+    linhas += `
+      <tr class="${ehMelhor ? 'melhor-modelo' : ''}">
+        <td><span class="modelo-nome ${ehMelhor ? 'destaque' : ''}">${m.modelo}${badge}</span></td>
+        <td>${temp}°${unidade}</td>
+        <td>${ehMelhor ? `<span class="gold">${conf}%</span>` : '—'}</td>
+      </tr>
+    `;
+  });
+
+  // Previsao do melhor modelo
+  const prevMelhor = modelos.find(m => m.modelo === melhor);
+  const tempMelhor = prevMelhor ? `${parseFloat(prevMelhor.temp_max_prevista).toFixed(1)}°${unidade}` : '—';
+
+  // Ranking global como texto
+  const rankingStr = RANKING_GLOBAL.map((r, i) => `${i+1}. ${r.modelo} (${r.pct}%)`).join(' | ');
+
+  container.innerHTML = `
+    <div style="font-size:12px; color:var(--text-sec); margin-bottom:14px;">
+      Previsoes para <strong style="color:var(--text-main)">${dataFormatada}</strong>
+    </div>
+    <table class="modelos-tabela">
+      <thead>
+        <tr>
+          <th>Modelo</th>
+          <th>Temp. Max</th>
+          <th>Confianca</th>
+        </tr>
+      </thead>
+      <tbody>${linhas}</tbody>
+    </table>
+    <div class="consenso-bar">
+      <div class="consenso-titulo">Consenso dos modelos</div>
+      <div class="consenso-val">${tempConsenso}°${unidade} <span style="color:var(--text-sec); font-weight:400;">(${qtdConsenso}/${totalModelos} modelos concordam)</span></div>
+      <div style="margin-top:6px; font-size:12px;">
+        Melhor modelo: <strong class="gold">${melhor}</strong>
+        <span style="color:var(--text-sec);"> — previsao: </span>
+        <strong>${tempMelhor}</strong>
+        <span style="color:var(--text-sec);"> — acerto historico: </span>
+        <span class="gold">${conf}%</span>
+      </div>
+    </div>
+    <div class="ranking-global">
+      Ranking global (7d): ${rankingStr}
+    </div>
   `;
 }
 
