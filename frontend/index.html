@@ -1874,11 +1874,16 @@ function renderizarModelos(modelos, cidadeConfig, rankingInfo) {
     const badge = ehMelhor ? `<span class="modelo-badge">MELHOR</span>` : '';
     const pctStr = info && info.total > 0 ? `<span style="color:${corModelo || 'var(--gold)'};">${info.pct}%</span>` : '—';
     const estilo = ehTop3 ? `style="color:${coresMedalha[pos]};"` : '';
+    // Hora de captura deste modelo especifico
+    const hcUTC = m.hora_captura ? m.hora_captura.slice(11, 16) : '';
+    const hcLocal = hcUTC ? converterParaLocal(hcUTC, cidadeConfig.fuso_offset) : '—';
+    const hcBRT = hcUTC ? converterParaLocal(hcUTC, -3) : '—';
     linhas += `
       <tr class="${ehMelhor ? 'melhor-modelo' : ''}">
         <td><span class="modelo-nome ${ehMelhor ? 'destaque' : ''}" ${estilo}>${emojiModelo} ${m.modelo}${badge}</span></td>
         <td ${estilo}>${temp}°${unidade}</td>
         <td>${pctStr}</td>
+        <td style="font-size:11px; color:var(--text-sec);">${hcLocal} local / ${hcBRT} BRT</td>
       </tr>
     `;
   });
@@ -1921,6 +1926,7 @@ function renderizarModelos(modelos, cidadeConfig, rankingInfo) {
           <th>Modelo</th>
           <th>Temp. Max</th>
           <th>Acerto (30d)</th>
+          <th>Atualizado</th>
         </tr>
       </thead>
       <tbody>${linhas}</tbody>
