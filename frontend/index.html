@@ -1349,12 +1349,6 @@ function renderizarInfoPrevisao(previsao, leituras, cidadeConfig, acuracia) {
       <span><span class="label sec">Previsao ${hora}: </span><span class="val" style="color:#c0c0c0;">${prev.toFixed(1)}°${unidade}</span></span>
       ${maxReal !== null ? `<span><span class="label sec">Max real ate agora: </span><span class="val gold">${maxReal.toFixed(1)}°${unidade}</span></span>` : ''}
       ${diff !== null ? `<span><span class="label sec">Diferenca: </span>${diffStr}</span>` : ''}
-      ${acuracia ? `<span><span class="label sec">Acuracia 7d (exata):</span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>` : ''}
-    </div>`;
-  } else if (acuracia) {
-    blocoPrevisao = `
-    <div style="margin-top:10px; padding:10px 0; border-top:1px solid var(--border); width:100%; font-size:12px;">
-      <span><span class="label sec">Acuracia 7d (exata):</span><span class="val">${acuracia.pct}% (${acuracia.acertos}/${acuracia.total})</span></span>
     </div>`;
   }
 
