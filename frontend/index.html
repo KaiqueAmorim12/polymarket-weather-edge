@@ -2166,6 +2166,8 @@ function renderizarApostas() {
       resultadoHtml = '<span class="green">&#10003; Win</span>';
     } else if (a.resultado === 'lose' || a.resultado === 'perdeu') {
       resultadoHtml = '<span class="red">&#10007; Lose</span>';
+    } else if (a.resultado === 'vendeu') {
+      resultadoHtml = '<span class="gold">&#36; Vendeu</span>';
     } else if (a.resultado === 'pendente' || !a.resultado) {
       resultadoHtml = '<span class="sec">&#9679; Pendente</span>';
     } else {
@@ -2189,6 +2191,12 @@ function renderizarApostas() {
       acoesHtml = `
         <button class="btn-mini btn-ganhou" onclick="registrarResultado(${a.id}, 'ganhou', ${lucro})">&#10003; Ganhou</button>
         <button class="btn-mini btn-perdeu" onclick="registrarResultado(${a.id}, 'perdeu', ${prejuizo})">&#10007; Perdeu</button>
+        <span style="display:inline-flex; align-items:center; gap:4px; margin-left:4px;">
+          <input type="number" id="venda-valor-${a.id}" step="0.01" min="0" placeholder="$"
+            style="width:60px; padding:3px 5px; background:#0d1117; color:#e8edf5; border:1px solid rgba(136,146,164,0.2); border-radius:4px; font-size:11px;">
+          <button class="btn-mini" style="background:rgba(212,160,23,0.2); color:#d4a017;"
+            onclick="venderPosicao(${a.id}, ${valor})">&#x24; Vendeu</button>
+        </span>
       `;
     }
 
@@ -2222,8 +2230,11 @@ function atualizarMetricas(apostas) {
   const wins = comResultado.filter(a =>
     a.resultado === 'win' || a.resultado === 'ganhou'
   ).length;
+  const vendas = comResultado.filter(a => a.resultado === 'vendeu').length;
 
-  const winRate = comResultado.length > 0 ? (wins / comResultado.length * 100) : 0;
+  // Win rate: ganhou / (ganhou + perdeu). Vendas nao contam (saiu antes da resolucao)
+  const semVendas = comResultado.length - vendas;
+  const winRate = semVendas > 0 ? (wins / semVendas * 100) : 0;
 
   const pnlTotal = apostas.reduce((s, a) => s + (parseFloat(a.pnl) || 0), 0);
   const valorTotal = apostas.reduce((s, a) => s + (parseFloat(a.valor) || 0), 0);
@@ -2361,6 +2372,22 @@ async function registrarResultado(id, resultado, pnl) {
     console.error('Erro de rede ao atualizar resultado:', err);
     alert('Erro de conexao. Tente novamente.');
   }
+}
+
+/** Vender posicao antes da resolucao — usuario informa valor recebido */
+async function venderPosicao(id, valorInvestido) {
+  const input = document.getElementById(`venda-valor-${id}`);
+  if (!input || !input.value) {
+    alert('Digite o valor recebido na venda.');
+    return;
+  }
+  const valorRecebido = parseFloat(input.value);
+  if (isNaN(valorRecebido) || valorRecebido < 0) {
+    alert('Valor invalido.');
+    return;
+  }
+  const pnl = (valorRecebido - valorInvestido).toFixed(2);
+  await registrarResultado(id, 'vendeu', pnl);
 }
 
 // ==============================================================
