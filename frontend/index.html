@@ -2227,14 +2227,9 @@ function atualizarMetricas(apostas) {
     a.resultado && a.resultado !== 'pendente'
   );
 
-  const wins = comResultado.filter(a =>
-    a.resultado === 'win' || a.resultado === 'ganhou'
-  ).length;
-  const vendas = comResultado.filter(a => a.resultado === 'vendeu').length;
-
-  // Win rate: ganhou / (ganhou + perdeu). Vendas nao contam (saiu antes da resolucao)
-  const semVendas = comResultado.length - vendas;
-  const winRate = semVendas > 0 ? (wins / semVendas * 100) : 0;
+  // Win rate = saiu no lucro (P&L > 0) / total resolvidas
+  const wins = comResultado.filter(a => parseFloat(a.pnl || 0) > 0).length;
+  const winRate = comResultado.length > 0 ? (wins / comResultado.length * 100) : 0;
 
   const pnlTotal = apostas.reduce((s, a) => s + (parseFloat(a.pnl) || 0), 0);
   const valorTotal = apostas.reduce((s, a) => s + (parseFloat(a.valor) || 0), 0);
