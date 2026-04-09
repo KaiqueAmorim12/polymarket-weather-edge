@@ -528,6 +528,88 @@
     .modelos-hist-acuracia .item-modelo { white-space: nowrap; }
     .modelos-hist-acuracia .item-modelo.destaque { color: #d4a017; font-weight: 700; }
 
+    /* ======================================================
+       SECAO MINHAS POSICOES
+    ====================================================== */
+    .posicoes-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+    }
+    .posicoes-controls {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .posicoes-count {
+      font-size: 13px; color: var(--gold); font-weight: 700;
+      background: rgba(212,160,23,0.1); border: 1px solid rgba(212,160,23,0.25);
+      border-radius: 6px; padding: 5px 12px;
+    }
+    .posicoes-date-input {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(136,146,164,0.15);
+      border-radius: var(--radius-btn);
+      color: var(--text-main);
+      padding: 7px 12px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color var(--transition);
+      cursor: pointer;
+    }
+    .posicoes-date-input:focus { border-color: rgba(212,160,23,0.5); }
+
+    .posicoes-sort-select {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(136,146,164,0.15);
+      border-radius: var(--radius-btn);
+      color: var(--text-main);
+      padding: 7px 12px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .posicoes-sort-select:hover,
+    .posicoes-sort-select:focus { border-color: rgba(212,160,23,0.5); }
+    .posicoes-sort-select option { background: var(--bg-card); }
+
+    .posicoes-table-wrapper { overflow-x: auto; }
+    .posicoes-table { width: 100%; border-collapse: collapse; }
+    .posicoes-table th {
+      text-align: left; padding: 10px 12px;
+      color: var(--text-sec); font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    .posicoes-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px; white-space: nowrap;
+    }
+    .posicoes-table tr:last-child td { border-bottom: none; }
+    .posicoes-table tr.ativo { background: rgba(212,160,23,0.05); }
+    .posicoes-table tr:hover { background: var(--bg-hover); }
+
+    /* Checkbox customizado dourado */
+    .check-operacao {
+      width: 18px; height: 18px;
+      cursor: pointer; accent-color: #d4a017;
+    }
+
+    /* Relogio */
+    .hora-local {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 13px; color: var(--gold);
+    }
+    .hora-brt {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 13px; color: var(--text-sec);
+    }
+
+    /* Status */
+    .status-ativo {
+      color: var(--green); font-weight: 700;
+      font-size: 11px; text-transform: uppercase;
+    }
+    .status-inativo { color: var(--text-sec); }
+
     /* MODELOS METEOROLOGICOS */
     .modelos-tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
     .modelos-tabela th {
@@ -605,6 +687,48 @@
      MAIN
 ============================================================ -->
 <main>
+
+  <!-- ==========================================================
+       1b. MINHAS POSICOES
+  ========================================================== -->
+  <section id="secao-posicoes">
+    <div class="posicoes-header">
+      <div class="section-title" style="margin-bottom:0; flex:1;">
+        <div class="section-icon">&#128203;</div>
+        Minhas Posicoes
+      </div>
+      <div class="posicoes-controls">
+        <span class="posicoes-count" id="posicoes-count">0 cidades em operacao</span>
+        <input type="date" id="posicoes-data" class="posicoes-date-input" />
+        <select id="posicoes-ordem" class="posicoes-sort-select">
+          <option value="hora">Ordenar: Hora Local</option>
+          <option value="nome">Ordenar: Nome</option>
+          <option value="status">Ordenar: Em Operacao primeiro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 0;">
+      <div class="posicoes-table-wrapper">
+        <table class="posicoes-table" id="tabela-posicoes">
+          <thead>
+            <tr>
+              <th>Cidade</th>
+              <th>Regiao</th>
+              <th>Hora Local</th>
+              <th>Hora BRT</th>
+              <th>Em Operacao</th>
+              <th>Data Contrato</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="posicoes-body">
+            <!-- preenchido pelo JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
 
   <!-- ==========================================================
        2. PAINEL DE CIDADES — GRID
@@ -2245,6 +2369,149 @@ async function registrarResultado(id, resultado, pnl) {
 
 document.getElementById('filtro-regiao').addEventListener('change', renderizarGrid);
 document.getElementById('filtro-ordem').addEventListener('change', renderizarGrid);
+
+// ==============================================================
+// MINHAS POSICOES
+// ==============================================================
+
+/** Retorna a data de hoje no formato YYYY-MM-DD (para o date picker) */
+function hojeISO() {
+  const d = new Date();
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+/** Formata data ISO para exibicao DD/MM/YYYY */
+function formatarDataExibicao(iso) {
+  if (!iso) return '—';
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+/** Renderiza a tabela de posicoes com base na ordem escolhida */
+function renderizarPosicoes() {
+  const ordem = document.getElementById('posicoes-ordem').value;
+  const dataSelecionada = document.getElementById('posicoes-data').value || hojeISO();
+  const saved = JSON.parse(localStorage.getItem('we_posicoes') || '{}');
+
+  // Criar copia ordenavel
+  let lista = CIDADES.map(c => ({...c}));
+
+  if (ordem === 'nome') {
+    lista.sort((a, b) => a.nome.localeCompare(b.nome));
+  } else if (ordem === 'status') {
+    lista.sort((a, b) => {
+      const aAtivo = !!saved[a.nome] ? 0 : 1;
+      const bAtivo = !!saved[b.nome] ? 0 : 1;
+      return aAtivo - bAtivo || a.nome.localeCompare(b.nome);
+    });
+  } else {
+    // Ordenar por hora local atual (fuso_offset maior = mais adiantado)
+    lista.sort((a, b) => b.fuso_offset - a.fuso_offset);
+  }
+
+  const tbody = document.getElementById('posicoes-body');
+  tbody.innerHTML = '';
+
+  lista.forEach(c => {
+    const ativo = !!saved[c.nome];
+    const tr = document.createElement('tr');
+    if (ativo) tr.classList.add('ativo');
+
+    tr.innerHTML = `
+      <td style="font-weight:700;">${c.nome}</td>
+      <td class="sec">${c.regiao}</td>
+      <td><span class="hora-local" data-fuso="${c.fuso_offset}">--:--:--</span></td>
+      <td><span class="hora-brt">--:--:--</span></td>
+      <td style="text-align:center;">
+        <input type="checkbox" class="check-operacao"
+               data-cidade="${c.nome}"
+               ${ativo ? 'checked' : ''}
+               onchange="togglePosicao(this)" />
+      </td>
+      <td>${formatarDataExibicao(dataSelecionada)}</td>
+      <td>${ativo
+        ? '<span class="status-ativo">ATIVO</span>'
+        : '<span class="status-inativo">—</span>'
+      }</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  atualizarContadorPosicoes();
+  // Atualiza os relogios imediatamente apos renderizar
+  atualizarRelogios();
+}
+
+/** Marca/desmarca cidade e persiste no localStorage */
+function togglePosicao(checkbox) {
+  const saved = JSON.parse(localStorage.getItem('we_posicoes') || '{}');
+  if (checkbox.checked) {
+    saved[checkbox.dataset.cidade] = true;
+  } else {
+    delete saved[checkbox.dataset.cidade];
+  }
+  localStorage.setItem('we_posicoes', JSON.stringify(saved));
+
+  // Atualizar classe ativo na linha
+  const tr = checkbox.closest('tr');
+  if (checkbox.checked) {
+    tr.classList.add('ativo');
+    tr.querySelector('.status-inativo') && (tr.querySelector('td:last-child').innerHTML = '<span class="status-ativo">ATIVO</span>');
+  } else {
+    tr.classList.remove('ativo');
+    tr.querySelector('.status-ativo') && (tr.querySelector('td:last-child').innerHTML = '<span class="status-inativo">—</span>');
+  }
+
+  atualizarContadorPosicoes();
+}
+
+/** Atualiza o contador de cidades em operacao */
+function atualizarContadorPosicoes() {
+  const total = document.querySelectorAll('.check-operacao:checked').length;
+  const el = document.getElementById('posicoes-count');
+  if (el) el.textContent = `${total} cidade${total !== 1 ? 's' : ''} em operacao`;
+}
+
+/** Atualiza todos os relogios locais e BRT a cada segundo */
+function atualizarRelogios() {
+  const agora = new Date();
+  const utcH = agora.getUTCHours();
+  const utcM = agora.getUTCMinutes();
+  const utcS = agora.getUTCSeconds();
+
+  document.querySelectorAll('.hora-local').forEach(el => {
+    const fuso = parseFloat(el.dataset.fuso);
+    // Calcula hora local: pode ter fuso fracionado (ex: 5.5 para India)
+    const totalMinutos = utcH * 60 + utcM + fuso * 60;
+    const minutosDia = ((totalMinutos % 1440) + 1440) % 1440;
+    const h = Math.floor(minutosDia / 60);
+    const m = minutosDia % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(utcS).padStart(2,'0')}`;
+  });
+
+  // BRT = UTC-3
+  const brtH = ((utcH - 3) % 24 + 24) % 24;
+  const brtStr = `${String(brtH).padStart(2,'0')}:${String(utcM).padStart(2,'0')}:${String(utcS).padStart(2,'0')}`;
+  document.querySelectorAll('.hora-brt').forEach(el => {
+    el.textContent = brtStr;
+  });
+}
+
+// Inicializar data picker com hoje
+document.getElementById('posicoes-data').value = hojeISO();
+
+// Renderizar tabela inicial
+renderizarPosicoes();
+
+// Atualizar relogios a cada segundo
+setInterval(atualizarRelogios, 1000);
+
+// Re-renderizar ao mudar ordem ou data
+document.getElementById('posicoes-ordem').addEventListener('change', renderizarPosicoes);
+document.getElementById('posicoes-data').addEventListener('change', renderizarPosicoes);
 
 // ==============================================================
 // INICIALIZACAO + AUTO-REFRESH
