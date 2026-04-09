@@ -1,236 +1,166 @@
 {
-  "data": "2026-04-08",
+  "data": "2026-04-09",
   "cidades": {
     "Wellington": {
-      "leituras": 48,
-      "temp_atual": 17,
-      "pico": 20,
-      "pico_hora": "12:30",
+      "leituras": 27,
+      "temp_atual": 21,
+      "pico": 21,
+      "pico_hora": "13:00",
       "unidade": "C"
     },
     "Seoul": {
-      "leituras": 25,
-      "temp_atual": 6,
-      "pico": 15,
-      "pico_hora": "15:00",
+      "leituras": 11,
+      "temp_atual": 12,
+      "pico": 12,
+      "pico_hora": "08:00",
       "unidade": "C"
     },
     "Tokyo": {
-      "leituras": 48,
-      "temp_atual": 14,
-      "pico": 17,
-      "pico_hora": "12:30",
+      "leituras": 21,
+      "temp_atual": 18,
+      "pico": 18,
+      "pico_hora": "09:30",
       "unidade": "C"
     },
     "Busan": {
-      "leituras": 25,
-      "temp_atual": 11,
-      "pico": 17,
-      "pico_hora": "11:34",
+      "leituras": 16,
+      "temp_atual": 15,
+      "pico": 15,
+      "pico_hora": "09:23",
       "unidade": "C"
     },
     "Shanghai": {
-      "leituras": 48,
-      "temp_atual": 16,
-      "pico": 18,
-      "pico_hora": "11:30",
+      "leituras": 18,
+      "temp_atual": 21,
+      "pico": 21,
+      "pico_hora": "08:30",
       "unidade": "C"
     },
     "Hong Kong": {
-      "leituras": 48,
-      "temp_atual": 25,
+      "leituras": 18,
+      "temp_atual": 27,
       "pico": 27,
-      "pico_hora": "00:00",
+      "pico_hora": "08:30",
       "unidade": "C"
     },
     "Beijing": {
-      "leituras": 48,
-      "temp_atual": 13,
-      "pico": 20,
-      "pico_hora": "14:30",
+      "leituras": 18,
+      "temp_atual": 10,
+      "pico": 13,
+      "pico_hora": "00:00",
       "unidade": "C"
     },
     "Chongqing": {
-      "leituras": 24,
-      "temp_atual": 22,
-      "pico": 27,
-      "pico_hora": "16:00",
+      "leituras": 10,
+      "temp_atual": 21,
+      "pico": 22,
+      "pico_hora": "00:00",
       "unidade": "C"
     },
     "Taipei": {
-      "leituras": 52,
-      "temp_atual": 23,
-      "pico": 26,
-      "pico_hora": "13:00",
+      "leituras": 21,
+      "temp_atual": 24,
+      "pico": 24,
+      "pico_hora": "09:00",
       "unidade": "C"
     },
     "Singapore": {
-      "leituras": 49,
-      "temp_atual": 26,
-      "pico": 33,
-      "pico_hora": "13:00",
+      "leituras": 18,
+      "temp_atual": 28,
+      "pico": 28,
+      "pico_hora": "08:00",
       "unidade": "C"
     },
     "Kuala Lumpur": {
-      "leituras": 49,
-      "temp_atual": 28,
-      "pico": 33,
-      "pico_hora": "13:00",
+      "leituras": 18,
+      "temp_atual": 27,
+      "pico": 28,
+      "pico_hora": "00:30",
       "unidade": "C"
     },
     "Jakarta": {
-      "leituras": 51,
-      "temp_atual": 26,
-      "pico": 32,
-      "pico_hora": "10:30",
+      "leituras": 17,
+      "temp_atual": 28,
+      "pico": 28,
+      "pico_hora": "08:00",
       "unidade": "C"
     },
     "Lucknow": {
-      "leituras": 45,
-      "temp_atual": 19,
-      "pico": 26,
-      "pico_hora": "16:00",
+      "leituras": 11,
+      "temp_atual": 17,
+      "pico": 19,
+      "pico_hora": "00:00",
       "unidade": "C"
     },
     "Moscow": {
-      "leituras": 49,
-      "temp_atual": 3,
-      "pico": 5,
-      "pico_hora": "13:00",
+      "leituras": 10,
+      "temp_atual": 1,
+      "pico": 2,
+      "pico_hora": "00:00",
       "unidade": "C"
     },
     "Ankara": {
-      "leituras": 47,
-      "temp_atual": 3,
-      "pico": 9,
+      "leituras": 8,
+      "temp_atual": -1,
+      "pico": 1,
       "pico_hora": "00:20",
       "unidade": "C"
     },
     "Tel Aviv": {
-      "leituras": 43,
-      "temp_atual": 17,
-      "pico": 21,
-      "pico_hora": "13:50",
+      "leituras": 8,
+      "temp_atual": 14,
+      "pico": 15,
+      "pico_hora": "00:20",
       "unidade": "C"
     },
     "Helsinki": {
-      "leituras": 43,
-      "temp_atual": 2,
-      "pico": 8,
-      "pico_hora": "14:50",
+      "leituras": 8,
+      "temp_atual": -2,
+      "pico": 0,
+      "pico_hora": "00:20",
       "unidade": "C"
     },
     "Warsaw": {
-      "leituras": 41,
-      "temp_atual": 5,
-      "pico": 9,
-      "pico_hora": "15:00",
+      "leituras": 7,
+      "temp_atual": -2,
+      "pico": 1,
+      "pico_hora": "01:00",
       "unidade": "C"
     },
     "Paris": {
-      "leituras": 41,
-      "temp_atual": 23,
-      "pico": 24,
-      "pico_hora": "15:30",
+      "leituras": 7,
+      "temp_atual": 12,
+      "pico": 16,
+      "pico_hora": "00:00",
       "unidade": "C"
     },
     "Amsterdam": {
-      "leituras": 42,
-      "temp_atual": 15,
-      "pico": 20,
-      "pico_hora": "14:55",
+      "leituras": 6,
+      "temp_atual": 10,
+      "pico": 14,
+      "pico_hora": "00:25",
       "unidade": "C"
     },
     "Madrid": {
-      "leituras": 42,
-      "temp_atual": 14,
-      "pico": 17,
-      "pico_hora": "15:00",
+      "leituras": 7,
+      "temp_atual": 7,
+      "pico": 10,
+      "pico_hora": "00:00",
       "unidade": "C"
     },
     "Milan": {
-      "leituras": 42,
-      "temp_atual": 18,
-      "pico": 24,
-      "pico_hora": "15:50",
+      "leituras": 6,
+      "temp_atual": 13,
+      "pico": 15,
+      "pico_hora": "00:20",
       "unidade": "C"
     },
     "London": {
-      "leituras": 39,
-      "temp_atual": 23,
-      "pico": 26,
-      "pico_hora": "15:20",
+      "leituras": 4,
+      "temp_atual": 16,
+      "pico": 17,
+      "pico_hora": "00:20",
       "unidade": "C"
-    },
-    "Sao Paulo": {
-      "leituras": 17,
-      "temp_atual": 26,
-      "pico": 27,
-      "pico_hora": "12:00",
-      "unidade": "C"
-    },
-    "Buenos Aires": {
-      "leituras": 18,
-      "temp_atual": 21,
-      "pico": 21,
-      "pico_hora": "15:00",
-      "unidade": "C"
-    },
-    "Toronto": {
-      "leituras": 16,
-      "temp_atual": 4,
-      "pico": 4,
-      "pico_hora": "15:00",
-      "unidade": "C"
-    },
-    "NYC": {
-      "leituras": 15,
-      "temp_atual": 46,
-      "pico": 46,
-      "pico_hora": "14:51",
-      "unidade": "F"
-    },
-    "Panama": {
-      "leituras": 15,
-      "temp_atual": 33,
-      "pico": 33,
-      "pico_hora": "12:00",
-      "unidade": "C"
-    },
-    "Chicago": {
-      "leituras": 14,
-      "temp_atual": 65,
-      "pico": 65,
-      "pico_hora": "13:51",
-      "unidade": "F"
-    },
-    "Mexico City": {
-      "leituras": 16,
-      "temp_atual": 26,
-      "pico": 26,
-      "pico_hora": "12:49",
-      "unidade": "C"
-    },
-    "Denver": {
-      "leituras": 15,
-      "temp_atual": 63,
-      "pico": 68,
-      "pico_hora": "09:53",
-      "unidade": "F"
-    },
-    "Miami": {
-      "leituras": 31,
-      "temp_atual": 81,
-      "pico": 81,
-      "pico_hora": "14:53",
-      "unidade": "F"
-    },
-    "Seattle": {
-      "leituras": 12,
-      "temp_atual": 54,
-      "pico": 54,
-      "pico_hora": "11:53",
-      "unidade": "F"
     }
   },
   "metricas": {
@@ -243,71 +173,5 @@
     "win_rate": 25.0,
     "roi": -43.7068507700478
   },
-  "apostas_hoje": [
-    {
-      "id": 5,
-      "cidade": "Tel Aviv",
-      "data_alvo": "2026-04-08",
-      "faixa": "20",
-      "tipo": "YES",
-      "odd": 0.56,
-      "valor": 5,
-      "horario_registro": "2026-04-08T18:34",
-      "resultado": "perdeu",
-      "pnl": -5,
-      "criado_em": "2026-04-08T18:34:44.281895+00:00"
-    },
-    {
-      "id": 4,
-      "cidade": "Paris",
-      "data_alvo": "2026-04-08",
-      "faixa": "24",
-      "tipo": "YES",
-      "odd": 0.57,
-      "valor": 4.9,
-      "horario_registro": "2026-04-08T18:33",
-      "resultado": "ganhou",
-      "pnl": 3.7,
-      "criado_em": "2026-04-08T18:33:36.503661+00:00"
-    },
-    {
-      "id": 3,
-      "cidade": "Sao Paulo",
-      "data_alvo": "2026-04-08",
-      "faixa": "26",
-      "tipo": "YES",
-      "odd": 0.46,
-      "valor": 5,
-      "horario_registro": "2026-04-08T18:32",
-      "resultado": "perdeu",
-      "pnl": -5,
-      "criado_em": "2026-04-08T18:32:15.410716+00:00"
-    },
-    {
-      "id": 2,
-      "cidade": "Toronto",
-      "data_alvo": "2026-04-08",
-      "faixa": "5",
-      "tipo": "YES",
-      "odd": 0.38,
-      "valor": 2,
-      "horario_registro": "2026-04-08T18:15",
-      "resultado": "pendente",
-      "pnl": 0,
-      "criado_em": "2026-04-08T18:15:54.951806+00:00"
-    },
-    {
-      "id": 1,
-      "cidade": "Buenos Aires",
-      "data_alvo": "2026-04-08",
-      "faixa": "20",
-      "tipo": "YES",
-      "odd": 0.3,
-      "valor": 1.93,
-      "horario_registro": "2026-04-08T15:38",
-      "resultado": "perdeu",
-      "pnl": -1.93,
-      "criado_em": "2026-04-08T15:38:20.251875+00:00"
-    }
-  ]
+  "apostas_hoje": []
 }
