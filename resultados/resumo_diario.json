@@ -2,165 +2,235 @@
   "data": "2026-06-25",
   "cidades": {
     "Wellington": {
-      "leituras": 29,
-      "temp_atual": 9,
+      "leituras": 41,
+      "temp_atual": 11,
       "pico": 13,
       "pico_hora": "04:00",
       "unidade": "C"
     },
     "Seoul": {
-      "leituras": 12,
-      "temp_atual": 26,
+      "leituras": 18,
+      "temp_atual": 24,
       "pico": 26,
       "pico_hora": "11:00",
       "unidade": "C"
     },
     "Tokyo": {
-      "leituras": 22,
-      "temp_atual": 22,
+      "leituras": 34,
+      "temp_atual": 21,
       "pico": 22,
       "pico_hora": "00:00",
       "unidade": "C"
     },
     "Busan": {
-      "leituras": 13,
-      "temp_atual": 26,
-      "pico": 26,
-      "pico_hora": "11:00",
+      "leituras": 20,
+      "temp_atual": 24,
+      "pico": 28,
+      "pico_hora": "14:00",
       "unidade": "C"
     },
     "Shanghai": {
-      "leituras": 21,
-      "temp_atual": 23,
-      "pico": 24,
-      "pico_hora": "09:00",
+      "leituras": 33,
+      "temp_atual": 24,
+      "pico": 25,
+      "pico_hora": "12:00",
       "unidade": "C"
     },
     "Hong Kong": {
-      "leituras": 20,
-      "temp_atual": 31,
-      "pico": 32,
-      "pico_hora": "09:00",
+      "leituras": 34,
+      "temp_atual": 33,
+      "pico": 33,
+      "pico_hora": "11:30",
       "unidade": "C"
     },
     "Beijing": {
-      "leituras": 21,
-      "temp_atual": 27,
-      "pico": 27,
-      "pico_hora": "09:30",
+      "leituras": 33,
+      "temp_atual": 32,
+      "pico": 32,
+      "pico_hora": "15:00",
       "unidade": "C"
     },
     "Chongqing": {
-      "leituras": 11,
-      "temp_atual": 24,
-      "pico": 24,
-      "pico_hora": "10:00",
+      "leituras": 17,
+      "temp_atual": 25,
+      "pico": 25,
+      "pico_hora": "15:00",
       "unidade": "C"
     },
     "Taipei": {
-      "leituras": 24,
+      "leituras": 38,
       "temp_atual": 29,
       "pico": 30,
       "pico_hora": "08:30",
       "unidade": "C"
     },
     "Singapore": {
-      "leituras": 21,
-      "temp_atual": 28,
-      "pico": 28,
-      "pico_hora": "08:00",
+      "leituras": 33,
+      "temp_atual": 31,
+      "pico": 31,
+      "pico_hora": "14:00",
       "unidade": "C"
     },
     "Kuala Lumpur": {
-      "leituras": 21,
-      "temp_atual": 27,
-      "pico": 27,
-      "pico_hora": "10:00",
+      "leituras": 34,
+      "temp_atual": 31,
+      "pico": 31,
+      "pico_hora": "14:00",
       "unidade": "C"
     },
     "Jakarta": {
-      "leituras": 20,
-      "temp_atual": 30,
-      "pico": 30,
-      "pico_hora": "09:30",
+      "leituras": 37,
+      "temp_atual": 28,
+      "pico": 32,
+      "pico_hora": "12:00",
       "unidade": "C"
     },
     "Lucknow": {
-      "leituras": 16,
-      "temp_atual": 32,
-      "pico": 34,
-      "pico_hora": "00:00",
+      "leituras": 29,
+      "temp_atual": 38,
+      "pico": 39,
+      "pico_hora": "11:30",
       "unidade": "C"
     },
     "Moscow": {
-      "leituras": 11,
-      "temp_atual": 13,
+      "leituras": 23,
+      "temp_atual": 15,
       "pico": 15,
       "pico_hora": "00:00",
       "unidade": "C"
     },
     "Ankara": {
-      "leituras": 11,
-      "temp_atual": 14,
-      "pico": 19,
-      "pico_hora": "00:50",
+      "leituras": 23,
+      "temp_atual": 25,
+      "pico": 25,
+      "pico_hora": "11:20",
       "unidade": "C"
     },
     "Tel Aviv": {
-      "leituras": 11,
-      "temp_atual": 23,
-      "pico": 25,
-      "pico_hora": "00:20",
+      "leituras": 23,
+      "temp_atual": 29,
+      "pico": 29,
+      "pico_hora": "10:50",
       "unidade": "C"
     },
     "Helsinki": {
-      "leituras": 11,
-      "temp_atual": 10,
-      "pico": 11,
-      "pico_hora": "00:20",
+      "leituras": 22,
+      "temp_atual": 18,
+      "pico": 18,
+      "pico_hora": "10:20",
       "unidade": "C"
     },
     "Warsaw": {
-      "leituras": 8,
-      "temp_atual": 14,
-      "pico": 19,
-      "pico_hora": "00:00",
+      "leituras": 20,
+      "temp_atual": 26,
+      "pico": 26,
+      "pico_hora": "09:30",
       "unidade": "C"
     },
     "Paris": {
-      "leituras": 10,
-      "temp_atual": 26,
-      "pico": 33,
-      "pico_hora": "00:00",
+      "leituras": 22,
+      "temp_atual": 34,
+      "pico": 34,
+      "pico_hora": "10:30",
       "unidade": "C"
     },
     "Amsterdam": {
-      "leituras": 9,
-      "temp_atual": 21,
-      "pico": 24,
-      "pico_hora": "00:25",
+      "leituras": 21,
+      "temp_atual": 25,
+      "pico": 25,
+      "pico_hora": "09:25",
       "unidade": "C"
     },
     "Madrid": {
-      "leituras": 10,
-      "temp_atual": 26,
+      "leituras": 22,
+      "temp_atual": 27,
       "pico": 31,
       "pico_hora": "00:00",
       "unidade": "C"
     },
     "Milan": {
-      "leituras": 7,
-      "temp_atual": 26,
-      "pico": 27,
-      "pico_hora": "00:20",
+      "leituras": 21,
+      "temp_atual": 30,
+      "pico": 30,
+      "pico_hora": "10:20",
       "unidade": "C"
     },
     "London": {
-      "leituras": 7,
-      "temp_atual": 21,
-      "pico": 22,
-      "pico_hora": "00:20",
+      "leituras": 19,
+      "temp_atual": 26,
+      "pico": 26,
+      "pico_hora": "09:20",
       "unidade": "C"
+    },
+    "Sao Paulo": {
+      "leituras": 7,
+      "temp_atual": 12,
+      "pico": 12,
+      "pico_hora": "04:00",
+      "unidade": "C"
+    },
+    "Buenos Aires": {
+      "leituras": 6,
+      "temp_atual": 10,
+      "pico": 10,
+      "pico_hora": "05:00",
+      "unidade": "C"
+    },
+    "Toronto": {
+      "leituras": 5,
+      "temp_atual": 18,
+      "pico": 20,
+      "pico_hora": "00:00",
+      "unidade": "C"
+    },
+    "NYC": {
+      "leituras": 5,
+      "temp_atual": 68,
+      "pico": 73,
+      "pico_hora": "00:51",
+      "unidade": "F"
+    },
+    "Panama": {
+      "leituras": 4,
+      "temp_atual": 25,
+      "pico": 26,
+      "pico_hora": "00:00",
+      "unidade": "C"
+    },
+    "Chicago": {
+      "leituras": 6,
+      "temp_atual": 63,
+      "pico": 63,
+      "pico_hora": "00:51",
+      "unidade": "F"
+    },
+    "Mexico City": {
+      "leituras": 3,
+      "temp_atual": 15,
+      "pico": 16,
+      "pico_hora": "00:29",
+      "unidade": "C"
+    },
+    "Denver": {
+      "leituras": 4,
+      "temp_atual": 59,
+      "pico": 60,
+      "pico_hora": "00:31",
+      "unidade": "F"
+    },
+    "Miami": {
+      "leituras": 4,
+      "temp_atual": 79,
+      "pico": 79,
+      "pico_hora": "02:53",
+      "unidade": "F"
+    },
+    "Seattle": {
+      "leituras": 1,
+      "temp_atual": 59,
+      "pico": 59,
+      "pico_hora": "00:53",
+      "unidade": "F"
     }
   },
   "metricas": {
